@@ -65,12 +65,12 @@ We identify three primary users: Students, Organizers, and Administrators.
 
 <h2>Team Members</h2>
 <ul>
-<li>Rohan Thangarajah    ID:40298014    Username:</li>
-<li>Prawin Kirupakaran   ID:40284716    Username:</li>
-<li>Joshua Bitton        ID:40273378    Username:</li>
-<li>Kenny Boum-Biha      ID:40214468    Username:</li>
-<li>Thien An Nguyen      ID:40298238    Username:</li>
-<li>Keaton Nguyen        ID:40296747    Username:</li>
+<li><p>Rohan Thangarajah&emsp;ID:40298014&emsp;username:</p></li>
+<li><p>Prawin Kirupakaran&emsp;ID:40284716&emsp;username:</p></li>
+<li><p>Joshua Bitton&emsp;&emsp;&emsp;&nbsp;&nbsp;ID:40273378&emsp;username:</p></li>
+<li><p>Kenny Boum-Biha&emsp;&ensp;&nbsp;ID:40214468&emsp;username:</p></li>
+<li><p>Thien An Nguyen&emsp;&ensp;&nbsp;&nbsp;ID:40298238&emsp;username:</p></li>
+<li><p>Keaton Nguyen&emsp;&emsp;&ensp;&nbsp;ID:40296747&emsp;username:</p></li>
 </ul>
 
 <h2>Programming Language and Frameworks</h2>
