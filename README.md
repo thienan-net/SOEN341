@@ -32,37 +32,48 @@ We identify three primary users: Students, Organizers, and Administrators.
          <ul>
           <li>Dashboard per event with stats: tickets issued, attendance rates, and remaining capacity.</li>
         </ul>
-      <li> 
+      <li>Tools
+         <ul>
+           <li>Export the attendee list in CSV.</li>
+           <li>Integrated QR scanner for ticket validation (for simplicity, you can assume the QR code image can be provided via file upload).</li>
+        </ul>
+      </li>
     </ul>
 </li>
   <h3><li>Administrator Dashboard & Moderation</h3>
     <ul>
-      <li>Event Discovery</li>
+      <li>Platform Oversight</li>
         <ul>
-          <li>Browse and search events with filters (date, category, organization).</li>
+          <li>Approve organizer accounts.</li>
+          <li>Moderate event listings for policy compliance.</li>
         </ul>  
-      <li>Event Management</li>
+      <li>Analytics</li>
          <ul>
-          <li>Save events to a personal calendar.</li>
-          <li>Claim tickets (free or mock paid).</li>
-          <li> Receive a digital ticket with a unique QR code.</li>
+          <li>View global stats: number of events, tickets issued, and participation trends.</li>
         </ul> 
-    </ul>
-</li>
+    </li>
+    <li>Management
+      <ul>
+        <li>Browse and search events with filters (date, category, organization).</li>
+      </ul>  
+    </li>
+  </ul>
 </ol>
 
+<h2>Additional Feature</h2>
+<p>TBD</p>
 
 <h2>Team Members</h2>
 <ul>
-<li>Rohan Thangarajah, 40298014</li>
-<li>Prawin Kirupakaran, 40284716</li>
-<li>Joshua Bitton, 40273378</li>
-<li>Kenny Boum-Biha, 40214468</li>
-<li>Thien An Nguyen, 40298238</li>
-<li>Keaton Nguyen, 40296747</li>
+<li>Rohan Thangarajah    ID:40298014    Username:</li>
+<li>Prawin Kirupakaran   ID:40284716    Username:</li>
+<li>Joshua Bitton        ID:40273378    Username:</li>
+<li>Kenny Boum-Biha      ID:40214468    Username:</li>
+<li>Thien An Nguyen      ID:40298238    Username:</li>
+<li>Keaton Nguyen        ID:40296747    Username:</li>
 </ul>
 
-<h2>Technology</h2>
+<h2>Programming Language and Frameworks</h2>
 <ul>
 <li>HTML</li>
 <li>CSS</li>
