@@ -1,6 +1,6 @@
 <h1>SOEN341</h1> 
 <h2>Description</h2>
-You are implementing a Campus Events & Ticketing Web Application designed to help students discover, organize, and attend events on campus. The system enables students to browse events, save them, claim free or paid tickets, and check in using QR codes. Organizers can create and manage events, track attendance, and access analytics through dashboards, while administrators moderate content and oversee organizations. The application streamlines event management, improves student engagement, and provides valuable insights for both organizers and campus administration.
+We are implementing a Campus Events & Ticketing Web Application designed to help students discover, organize, and attend events on campus. The system enables students to browse events, save them, claim free or paid tickets, and check in using QR codes. Organizers can create and manage events, track attendance, and access analytics through dashboards, while administrators moderate content and oversee organizations. The application streamlines event management, improves student engagement, and provides valuable insights for both organizers and campus administration.
 
 
 <h2>Objective</h2>
