@@ -71,7 +71,7 @@ There are 3 types of users: **Students**, **Organizers**, and **Administrators.*
 <h2>Team Members</h2>
 <ul>
 <li><p>Rohan Thangarajah&emsp;ID:40298014&emsp;e-mail: ro_thang@live.concordia.ca</p></li>
-<li><p>Prawin Kirupakaran&emsp;ID:40284716&emsp;e-mail:</p></li>
+<li><p>Prawin Kirupakaran&emsp;ID:40284716&emsp;e-mail: prawin.kirupakaran@gmail.com</p></li>
 <li><p>Joshua Bitton&emsp;&emsp;&emsp;&nbsp;&nbsp;ID:40273378&emsp;e-mail: joshtosh13@hotmail.com</p></li>
 <li><p>Kenny Boum-Biha&emsp;&ensp;&nbsp;ID:40214468&emsp;e-mail: kennyboum@gmail.com</p></li>
 <li><p>Thien An Nguyen&emsp;&ensp;&nbsp;&nbsp;ID:40298238&emsp;e-mail:</p></li>
