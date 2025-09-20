@@ -83,7 +83,7 @@ There are 3 types of users: **Students**, **Organizers**, and **Administrators.*
 <li>HTML</li>
 <li>CSS</li>
 <li>Bootstrap?</li>
-<li>JavaScript</li>
+<li>TypeSecript</li>
 <li>React</li>
 <li>MySQL</li>
 <li>etc.(TBD)</li>
