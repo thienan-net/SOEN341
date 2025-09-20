@@ -61,7 +61,12 @@ There are 3 types of users: **Students**, **Organizers**, and **Administrators.*
 </ol>
 
 <h2>Additional Feature</h2>
-<p>TBD</p>
+<p>Ticket Return System</p>
+<ul>
+  <li>The implementation of a tab accessible to the ticket holder displaying all their available tickets</li>
+  <li>Invalidation of the ticket's corresponding QR code</li>
+  <li>Prompt asking why the user wants to return said ticket</li>
+</ul>
 
 <h2>Team Members</h2>
 <ul>
