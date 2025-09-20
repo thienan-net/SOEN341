@@ -65,12 +65,12 @@ We identify three primary users: Students, Organizers, and Administrators.
 
 <h2>Team Members</h2>
 <ul>
-<li><p>Rohan Thangarajah&emsp;ID:40298014&emsp;username:</p></li>
-<li><p>Prawin Kirupakaran&emsp;ID:40284716&emsp;username:</p></li>
-<li><p>Joshua Bitton&emsp;&emsp;&emsp;&nbsp;&nbsp;ID:40273378&emsp;username:</p></li>
-<li><p>Kenny Boum-Biha&emsp;&ensp;&nbsp;ID:40214468&emsp;username:</p></li>
-<li><p>Thien An Nguyen&emsp;&ensp;&nbsp;&nbsp;ID:40298238&emsp;username:</p></li>
-<li><p>Keaton Nguyen&emsp;&emsp;&ensp;&nbsp;ID:40296747&emsp;username:</p></li>
+<li><p>Rohan Thangarajah&emsp;ID:40298014&emsp;e-mail: ro_thang@live.concordia.ca</p></li>
+<li><p>Prawin Kirupakaran&emsp;ID:40284716&emsp;e-mail:</p></li>
+<li><p>Joshua Bitton&emsp;&emsp;&emsp;&nbsp;&nbsp;ID:40273378&emsp;e-mail:</p></li>
+<li><p>Kenny Boum-Biha&emsp;&ensp;&nbsp;ID:40214468&emsp;e-mail:</p></li>
+<li><p>Thien An Nguyen&emsp;&ensp;&nbsp;&nbsp;ID:40298238&emsp;e-mail:</p></li>
+<li><p>Keaton Nguyen&emsp;&emsp;&ensp;&nbsp;ID:40296747&emsp;e-mail:</p></li>
 </ul>
 
 <h2>Programming Language and Frameworks</h2>
