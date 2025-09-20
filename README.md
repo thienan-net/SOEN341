@@ -61,7 +61,7 @@ There are 3 types of users: **Students**, **Organizers**, and **Administrators.*
 </ol>
 
 <h2>Additional Feature</h2>
-<p>Ticket Return System</p>
+<p><strong>Ticket Return System</strong></p>
 <ul>
   <li>The implementation of a tab accessible to the ticket holder displaying all their available tickets</li>
   <li>Invalidation of the ticket's corresponding QR code</li>
