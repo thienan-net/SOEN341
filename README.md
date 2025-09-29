@@ -80,13 +80,10 @@ There are 3 types of users: **Students**, **Organizers**, and **Administrators.*
 
 <h2>Programming Language and Frameworks</h2>
 <ul>
-<li>HTML</li>
-<li>CSS</li>
-<li>Bootstrap?</li>
-<li>TypeSecript</li>
-<li>React</li>
-<li>MySQL</li>
-<li>etc.(TBD)</li>
+<li>Front-End: React</li>
+<li>Backend: Node.js with Express.js</li>
+<li>Database: MangoDB</li>
+
 </ul>
 
 // GRADING SCHEME
