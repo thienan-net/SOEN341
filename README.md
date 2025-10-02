@@ -80,14 +80,16 @@ There are 3 types of users: **Students**, **Organizers**, and **Administrators.*
 
 <h2>Programming Language and Frameworks</h2>
 <ul>
+<<<<<<< Updated upstream
 <li>Front-End: React</li>
 <li>Backend: Node.js with Express.js</li>
 <li>Database: MangoDB</li>
 
 </ul>
+=======
+<li>Front-End: React, HTML, CSS</li>
+<li>Backend: Node.js with Express.js</li>
+<li>Database: MangoDB</li>
+>>>>>>> Stashed changes
 
-// GRADING SCHEME
-"0.5: Update the readme.md to show the description / objective / core features of the project
-       ○the info of your team members (real name, student number, and GitHub user name)
-       ○what languages & techniques do you plan to use (if haven't decided, then write sth like TBD)
-0.2~0.4: The description / objective is vague or unclear"
+</ul>
