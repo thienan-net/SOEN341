@@ -79,17 +79,9 @@ There are 3 types of users: **Students**, **Organizers**, and **Administrators.*
 </ul>
 
 <h2>Programming Language and Frameworks</h2>
-<ul>
-<<<<<<< Updated upstream
-<li>Front-End: React</li>
-<li>Backend: Node.js with Express.js</li>
-<li>Database: MangoDB</li>
 
-</ul>
-=======
 <li>Front-End: React, HTML, CSS</li>
 <li>Backend: Node.js with Express.js</li>
 <li>Database: MangoDB</li>
->>>>>>> Stashed changes
 
 </ul>
