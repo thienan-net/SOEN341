@@ -63,7 +63,7 @@ const EventSchema = new Schema<IEvent>({
   },
   ticketPrice: {
     type: Number,
-    required: function() {
+    required: function() : boolean {
       return this.ticketType === 'paid';
     },
     min: 0
