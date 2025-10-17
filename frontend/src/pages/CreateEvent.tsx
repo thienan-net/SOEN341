@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Clock, Users, DollarSign, Tag, FileText } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, DollarSign, Tag, FileText, Image } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
@@ -22,7 +22,11 @@ const CreateEvent: React.FC = () => {
     contactInfo: ''
   });
   const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState<string>("");
 
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setImage(event.target.value); 
+  };
   const categories = [
     { value: 'academic', label: 'Academic' },
     { value: 'social', label: 'Social' },
@@ -45,11 +49,12 @@ const CreateEvent: React.FC = () => {
     setLoading(true);
 
     try {
-      const eventData = {
+      const eventData  = {
         ...formData,
         capacity: parseInt(formData.capacity),
         ticketPrice: formData.ticketType === 'paid' ? parseFloat(formData.ticketPrice) : undefined,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+        tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        imageUrl: image
       };
 
       await axios.post('/events', eventData);
@@ -101,7 +106,32 @@ const CreateEvent: React.FC = () => {
                 onChange={handleChange}
               />
             </div>
+            <div>
+              <label htmlFor="imageUrl" className="label">
+                Image URL:
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Image className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="url"
+                  id="imageUrl"
+                  name="imageUrl"
+                  value={image}
+                  onChange={handleImageChange}
+                  placeholder="Enter image URL"
+                  className="input-field pl-10"
+                />
+              </div>
 
+              {/* Optional: preview */}
+              {image && (
+                <div className="mt-4">
+                  <img src={image} alt="Preview" className="w-48 h-48 object-cover rounded-lg" />
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="date" className="label">Date *</label>
