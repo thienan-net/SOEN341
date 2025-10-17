@@ -1,5 +1,5 @@
 import express from 'express';
-import { validationResult, query } from 'express-validator';
+import { body, validationResult, query } from 'express-validator';
 import Event from '../models/Event';
 import Ticket from '../models/Ticket';
 import { body } from 'express-validator';
@@ -28,18 +28,16 @@ router.get('/', [
     const skip = (Number(page) - 1) * Number(limit);
 
     // Build filter object
-    const filter: Record<string, any> = {
+    const filter: any = {
       status: 'published',
       isApproved: true,
       date: { $gte: new Date() } // Only future events
     };
 
-    //category filter
     if (category) {
       filter.category = category;
     }
 
-    // date filter
     if (date) {
       const startDate = new Date(date as string);
       const endDate = new Date(startDate);
@@ -47,7 +45,6 @@ router.get('/', [
       filter.date = { $gte: startDate, $lt: endDate };
     }
 
-    //search filter ( title, desc, location )
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
