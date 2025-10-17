@@ -117,6 +117,7 @@ const CreateEvent: React.FC = () => {
                     className="input-field pl-10"
                     value={formData.date}
                     onChange={handleChange}
+                    min={new Date().toISOString().split("T")[0]} 
                   />
                 </div>
               </div>
