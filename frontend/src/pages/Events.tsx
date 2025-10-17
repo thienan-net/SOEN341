@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight } from 'lucide-react';
 import axios from 'axios';
+import { DateRangePicker } from "rsuite";
+import 'rsuite/dist/rsuite.min.css';
 
 interface Event {
   _id: string;
@@ -26,11 +28,12 @@ interface Event {
 const Events: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<[Date, Date]>([new Date(), new Date()]);
+
   const [filters, setFilters] = useState(
   {
     search: '',
     category: '',
-    date: ''
   });
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -71,10 +74,11 @@ const Events: React.FC = () => {
       });
 
       // filter options if present
-      const { search, category, date } = filters;
+      const { search, category } = filters;
       if (search) params.append('search', search);
       if (category) params.append('category', category);
-      if (date) params.append('date', date);
+      if (dateRange[0]) params.append('dateStart', dateRange[0].toISOString());
+      if (dateRange[1]) params.append('dateEnd', dateRange[1].toISOString());
 
       // fetch events from API
       const response = await axios.get(`/events?${params.toString()}`);
@@ -91,7 +95,8 @@ const Events: React.FC = () => {
   };
 
   //handle for filter changes
-  const handleFilterChange = (key: string, value: string) => {
+  const handleFilterChange = (key: string, value: any) => {
+    console.log("value", value)
     setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
@@ -147,8 +152,8 @@ const Events: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div style={{alignItems: "center", display: "flex", flexDirection: "column"}} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-gray-400" />
@@ -160,6 +165,27 @@ const Events: React.FC = () => {
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
             />
+          </div>
+          <div className="relative">
+            {/* Calendar Icon */}
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <Calendar className="h-5 w-5 text-gray-400" />
+            </div>
+              <DateRangePicker
+                appearance='default'
+                value={dateRange}
+                onChange={(range: [Date, Date] | null) => {
+                    if (range) setDateRange(range);
+                    else setDateRange([new Date(), new Date()]); 
+                }}
+                placeholder="Select date range"
+                style={{ width: "100%", paddingLeft: "2.5rem" }} 
+                shouldDisableDate={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0); 
+                  return date < today;      
+                }}
+              />
           </div>
 
           <div className="relative">
@@ -178,26 +204,17 @@ const Events: React.FC = () => {
               ))}
             </select>
           </div>
-
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Calendar className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="date"
-              className="input-field pl-10"
-              value={filters.date}
-              onChange={(e) => handleFilterChange('date', e.target.value)}
-            />
-          </div>
-
-          <button
-            onClick={() => setFilters({ search: '', category: '', date: '' })}
-            className="btn-secondary"
+          
+        </div>
+        <button
+            onClick={() => {
+              setDateRange([new Date(), new Date()])
+              setFilters({ search: '', category: '' })
+            }}
+            className="btn-secondary mt-5"
           >
             Clear Filters
           </button>
-        </div>
       </div>
 
       {/* Events Grid */}
