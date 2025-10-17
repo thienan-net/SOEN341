@@ -26,7 +26,8 @@ interface Event {
 const Events: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState(
+  {
     search: '',
     category: '',
     date: ''
@@ -54,28 +55,42 @@ const Events: React.FC = () => {
     fetchEvents();
   }, [filters, pagination.currentPage]);
 
-  const fetchEvents = async () => {
-    try {
+
+  //fetch events
+  const fetchEvents = async () => 
+    {
+    try 
+    {
       setLoading(true);
-      const params = new URLSearchParams({
+
+      // build query parameters for filter
+      const params = new URLSearchParams(
+      {
         page: pagination.currentPage.toString(),
         limit: '12'
       });
 
-      if (filters.search) params.append('search', filters.search);
-      if (filters.category) params.append('category', filters.category);
-      if (filters.date) params.append('date', filters.date);
+      // filter options if present
+      const { search, category, date } = filters;
+      if (search) params.append('search', search);
+      if (category) params.append('category', category);
+      if (date) params.append('date', date);
 
-      const response = await axios.get(`/events?${params}`);
-      setEvents(response.data.events);
-      setPagination(response.data.pagination);
-    } catch (error) {
+      // fetch events from API
+      const response = await axios.get(`/events?${params.toString()}`);
+      const { events, pagination: newPagination } = response.data;
+      setEvents(events);
+      setPagination(newPagination);
+    } 
+    catch (error) {
       console.error('Error fetching events:', error);
-    } finally {
+    } 
+    finally {
       setLoading(false);
     }
   };
 
+  //handle for filter changes
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
