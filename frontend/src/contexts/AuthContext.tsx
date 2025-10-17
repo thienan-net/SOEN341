@@ -49,7 +49,7 @@ export const useAuth = () => {
 };
 
 // Configure axios defaults
-axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 // Add request interceptor to include token
 axios.interceptors.request.use(

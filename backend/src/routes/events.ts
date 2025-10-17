@@ -2,7 +2,6 @@ import express from 'express';
 import { body, validationResult, query } from 'express-validator';
 import Event from '../models/Event';
 import Ticket from '../models/Ticket';
-import { body } from 'express-validator';
 import { authenticate, AuthRequest, authorize, requireApproval } from '../middleware/auth';
 
 
