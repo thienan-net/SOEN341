@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight, LogIn, ArrowUp } from 'lucide-react';
 import axios from 'axios';
 
 interface Event {
@@ -26,6 +26,7 @@ interface Event {
 const Events: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("")
   const [filters, setFilters] = useState(
   {
     search: '',
@@ -91,7 +92,7 @@ const Events: React.FC = () => {
   };
 
   //handle for filter changes
-  const handleFilterChange = (key: string, value: string) => {
+  const onFilterSubmit = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
@@ -157,9 +158,17 @@ const Events: React.FC = () => {
               type="text"
               placeholder="Search events..."
               className="input-field pl-10"
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if(e.key === "Enter" ) {
+                  onFilterSubmit('search', search)
+                }
+              }}
             />
+            <div style={{cursor: "pointer"}} onClick={() => onFilterSubmit('search', search)} className="absolute inset-y-0 right-3 pl-3 flex items-center">
+              <ArrowUp  className="h-5 w-5 text-gray-400" />
+            </div>
           </div>
 
           <div className="relative">
@@ -169,7 +178,7 @@ const Events: React.FC = () => {
             <select
               className="input-field pl-10"
               value={filters.category}
-              onChange={(e) => handleFilterChange('category', e.target.value)}
+              onChange={(e) => onFilterSubmit('category', e.target.value)}
             >
               {categories.map((category) => (
                 <option key={category.value} value={category.value}>
@@ -187,7 +196,7 @@ const Events: React.FC = () => {
               type="date"
               className="input-field pl-10"
               value={filters.date}
-              onChange={(e) => handleFilterChange('date', e.target.value)}
+              onChange={(e) => onFilterSubmit('date', e.target.value)}
             />
           </div>
 
