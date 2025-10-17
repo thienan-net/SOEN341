@@ -6,8 +6,8 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 
 import authRoutes from './routes/auth';
-import eventRoutes from './routes/Events';
-import ticketRoutes from './routes/Tickets';
+import eventRoutes from './routes/events';
+import ticketRoutes from './routes/tickets';
 
 
 dotenv.config();

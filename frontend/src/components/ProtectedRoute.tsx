@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,8 +11,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   allowedRoles = [] 
 }) => {
-  const user = { role: "student", firstName: "John", lastName: "Doe", isApproved: true }
-  const loading = false;
+  const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
