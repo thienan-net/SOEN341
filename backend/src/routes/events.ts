@@ -28,8 +28,6 @@ router.get('/', [
 
     // Build filter object
     const filter: any = {
-      status: 'published',
-      isApproved: true,
       date: { $gte: new Date() } // Only future events
     };
 
