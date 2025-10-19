@@ -28,15 +28,40 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'   # You can change this 
+          node-version: 18              
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+            backend/package-lock.json
 
-      # Step 3: Install dependencies from requirements.txt
-      - name: Install dependencies
-        run: npm install                     #-r requirements.txt       # Install everything in requirements.txt
+      # Backend npm installs
+      - name: Backend | Install
+        working-directory: backend
+        run: npm ci                         #npm ci means npm clean installs
+      
+      # Backend test run
+      - name: Backend | Test
+        working-directory: backend
+        env:
+          NODE_ENV: test
+        run: |
+          if npm run | grep -q "test"; then npm test --silent; else echo "no backend tests"; fi
 
-      # Step 4: Run the tests with pytest
-      - name: Run tests
-        run: npm test --maxfail=1 --disable-warnings -q
+      # Frontend npm installs
+      - name: Frontend | Install
+        working-directory: frontend
+        run: npm ci
+        
+      # Frontend test run
+      - name: Frontend | Test
+        working-directory: frontend
+        env:
+          CI: "true"
+          NODE_ENV: test
+        run: |
+          if npm run | grep -q "test"; then npm test --silent; else echo "no frontend tests"; fi
+
         # --maxfail=1 : stop after 1 failure (useful for faster feedback)
         # --disable-warnings : hide warnings to keep output clean
         # -q : quiet mode (shorter output)
