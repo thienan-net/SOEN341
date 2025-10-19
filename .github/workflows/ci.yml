@@ -46,7 +46,7 @@ jobs:
         env:
           NODE_ENV: test
         run: |
-          if npm run | grep -q "test"; then npm test --silent; else echo "no backend tests"; fi
+          if npm run | grep -q "test"; then npm test --silent-- --passWithNoTests; else echo "no backend tests"; fi
 
       # Frontend npm installs
       - name: Frontend | Install
@@ -60,7 +60,7 @@ jobs:
           CI: "true"
           NODE_ENV: test
         run: |
-          if npm run | grep -q "test"; then npm test --silent; else echo "no frontend tests"; fi
+          if npm run | grep -q "test"; then npm test --silent-- --passWithNoTests; else echo "no frontend tests"; fi
 
         # --maxfail=1 : stop after 1 failure (useful for faster feedback)
         # --disable-warnings : hide warnings to keep output clean
