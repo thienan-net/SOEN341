@@ -32,7 +32,7 @@ jobs:
 
       # Step 3: Install dependencies from requirements.txt
       - name: Install dependencies
-        run: npm install -r requirements.txt       # Install everything in requirements.txt
+        run: npm install                     #-r requirements.txt       # Install everything in requirements.txt
 
       # Step 4: Run the tests with pytest
       - name: Run tests
