@@ -1,44 +1,44 @@
+import express from 'express';
 import request from "supertest";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import app from "../src/app";              
+     
+import ticketsRouter from '../src/routes/tickets';      
 import EventModel from '../src/models/Event';      
 import TicketModel from '../src/models/Ticket';    
 
 // Since QR validation route is protected, we need to mock auth middleware
 jest.mock('../src/middleware/auth', () => {
   const { Types } = require('mongoose');
-
-  // base no-op middleware that attaches a fake user
   const base = (req: any, _res: any, next: any) => {
-    req.user = { _id: new Types.ObjectId(), roles: ['organizer', 'student', 'admin'] };
+    req.user = { _id: new Types.ObjectId(), roles: ['organizer','student','admin'] };
     next();
   };
-
-  // factory version used like authorize('organizer')
-  const authorize = (_role: string) => (req: any, res: any, next: any) => base(req, res, next);
+  const authorize = (_role: string) => (req: any, res: any, next: any) => base(req,res,next);
 
   return {
     __esModule: true,
-    // some routes use default
-    default: base,
-    // some routes import named
-    authenticate: base,
-    // some routes call authorize('role')
-    authorize,
-    // if you also have role-specific guards, make them no-ops too
-    requireOrganizer: base,
+    default: base,             // if something imports default
+    authenticate: base,        // common named export
+    authorize,                 // factory authorize('role')
+    requireOrganizer: base,    // no-op guards
     requireAdmin: base,
+    requireApproval: base,     // <- add this so events/others won’t explode if ever mounted
   };
 });
 
-
 let mongo: MongoMemoryServer;
+let app: express.Express;
 
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
-  const uri = mongo.getUri();
-  await mongoose.connect(uri);
+  await mongoose.connect(mongo.getUri());
+
+  app = express();
+  app.use(express.json());
+
+  // Mount ONLY the route under test:
+  app.use('/api/tickets', ticketsRouter);
 });
 
 afterAll(async () => {
@@ -49,8 +49,8 @@ afterAll(async () => {
 afterEach(async () => {
   const db = mongoose.connection.db;
   if (!db) return;
-  const collections = await db.collections();
-  for (const c of collections) await c.deleteMany({});
+  const cols = await db.collections();
+  for (const c of cols) await c.deleteMany({});
 });
 
 describe('POST /api/tickets/validate', () => {
