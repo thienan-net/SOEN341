@@ -1,6 +1,7 @@
 import request from "supertest";
 import express from "express";
 import mongoose from "mongoose";
+import { Types } from 'mongoose';
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 // Mount ONLY the tickets router to avoid unrelated middleware/routes
@@ -54,14 +55,15 @@ describe('POST /api/tickets/validate', () => {
   const seed = async () => {
     const code = 'TEST-CODE-123';
 
-    await TicketModel.create({
-      event: new mongoose.Types.ObjectId(),  
-      user: new mongoose.Types.ObjectId(),
-      qrCode: code,
-      status: 'active',
-      price: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  await TicketModel.create({
+    event: new Types.ObjectId(),
+    user: new Types.ObjectId(),
+    ticketId: new Types.ObjectId().toHexString(),   // or any unique string/uuid
+    qrCode: code,
+    status: 'active',
+    price: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     });
 
     return { code };
