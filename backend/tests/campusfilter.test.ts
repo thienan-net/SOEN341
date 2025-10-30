@@ -1,8 +1,8 @@
 import request from "supertest";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import app from "../src/app"; // your Express app
-import Event from "../src/models/Event"; // adjust path to your Mongoose model
+import app from "../src/app";
+import Event from "../src/models/Event"; 
 
 let mongoServer: MongoMemoryServer;
 
