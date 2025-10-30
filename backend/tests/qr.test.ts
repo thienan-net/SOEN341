@@ -6,13 +6,24 @@ import EventModel from '../src/models/Event';
 import TicketModel from '../src/models/Ticket';    
 
 // Since QR validation route is protected, we need to mock auth middleware
-jest.mock('../src/middleware/auth', () => ({
-  // attach a fake organizer user to every request
-  default: (_req: any, _res: any, next: any) => {
-    _req.user = { _id: new mongoose.Types.ObjectId(), roles: ['organizer'] };
+jest.mock('../src/middleware/auth', () => {
+  const mockAuth = (req: any, _res: any, next: any) => {
+    // attach a fake user with organizer role
+    req.user = { _id: new (require('mongoose').Types.ObjectId)(), roles: ['organizer'] };
     next();
-  },
-}));
+  };
+
+  return {
+    __esModule: true,
+    // if any route imports default:
+    default: mockAuth,
+    // if routes import named 'authenticate':
+    authenticate: mockAuth,
+    // if you have role guards, make them no-ops:
+    requireOrganizer: (_req: any, _res: any, next: any) => next(),
+    requireAdmin: (_req: any, _res: any, next: any) => next(),
+  };
+});
 
 let mongo: MongoMemoryServer;
 
