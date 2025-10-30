@@ -7,23 +7,31 @@ import TicketModel from '../src/models/Ticket';
 
 // Since QR validation route is protected, we need to mock auth middleware
 jest.mock('../src/middleware/auth', () => {
-  const mockAuth = (req: any, _res: any, next: any) => {
-    // attach a fake user with organizer role
-    req.user = { _id: new (require('mongoose').Types.ObjectId)(), roles: ['organizer'] };
+  const { Types } = require('mongoose');
+
+  // base no-op middleware that attaches a fake user
+  const base = (req: any, _res: any, next: any) => {
+    req.user = { _id: new Types.ObjectId(), roles: ['organizer', 'student', 'admin'] };
     next();
   };
 
+  // factory version used like authorize('organizer')
+  const authorize = (_role: string) => (req: any, res: any, next: any) => base(req, res, next);
+
   return {
     __esModule: true,
-    // if any route imports default:
-    default: mockAuth,
-    // if routes import named 'authenticate':
-    authenticate: mockAuth,
-    // if you have role guards, make them no-ops:
-    requireOrganizer: (_req: any, _res: any, next: any) => next(),
-    requireAdmin: (_req: any, _res: any, next: any) => next(),
+    // some routes use default
+    default: base,
+    // some routes import named
+    authenticate: base,
+    // some routes call authorize('role')
+    authorize,
+    // if you also have role-specific guards, make them no-ops too
+    requireOrganizer: base,
+    requireAdmin: base,
   };
 });
+
 
 let mongo: MongoMemoryServer;
 
