@@ -1,29 +1,28 @@
-import express from 'express';
 import request from "supertest";
+import express from "express";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
-     
-import ticketsRouter from '../src/routes/tickets';      
-import EventModel from '../src/models/Event';      
-import TicketModel from '../src/models/Ticket';    
 
-// Since QR validation route is protected, we need to mock auth middleware
+// Mount ONLY the tickets router to avoid unrelated middleware/routes
+import ticketsRouter from '../src/routes/tickets';
+import TicketModel from '../src/models/Ticket';
+
+// Mock auth to always allow
 jest.mock('../src/middleware/auth', () => {
   const { Types } = require('mongoose');
   const base = (req: any, _res: any, next: any) => {
-    req.user = { _id: new Types.ObjectId(), roles: ['organizer','student','admin'] };
+    req.user = { _id: new Types.ObjectId(), roles: ['organizer'] };
     next();
   };
-  const authorize = (_role: string) => (req: any, res: any, next: any) => base(req,res,next);
-
+  const authorize = (_role: string) => base;
   return {
     __esModule: true,
-    default: base,             // if something imports default
-    authenticate: base,        // common named export
-    authorize,                 // factory authorize('role')
-    requireOrganizer: base,    // no-op guards
+    default: base,
+    authenticate: base,
+    authorize,
+    requireOrganizer: base,
     requireAdmin: base,
-    requireApproval: base,     // <- add this so events/others won’t explode if ever mounted
+    requireApproval: base,
   };
 });
 
@@ -33,12 +32,9 @@ let app: express.Express;
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri());
-
   app = express();
   app.use(express.json());
-
-  // Mount ONLY the route under test:
-  app.use('/api/tickets', ticketsRouter);
+  app.use('/api/tickets', ticketsRouter); 
 });
 
 afterAll(async () => {
@@ -53,32 +49,21 @@ afterEach(async () => {
   for (const c of cols) await c.deleteMany({});
 });
 
+// ---------- tests ----------
 describe('POST /api/tickets/validate', () => {
   const seed = async () => {
-    const event = await EventModel.create({
-      orgId: new mongoose.Types.ObjectId(),
-      title: 'Tech Talk',
-      description: 'Desc',
-      category: 'tech',
-      startsAt: new Date(Date.now() + 60 * 60 * 1000),
-      endsAt:   new Date(Date.now() + 2 * 60 * 60 * 1000),
-      location: 'Room A',
-      status: 'approved',
-      ticketType: 'free',  // ✅ your model
-      capacity: 100,
-    });
-
     const code = 'TEST-CODE-123';
 
     await TicketModel.create({
-      event: event._id,                     
-      user: new mongoose.Types.ObjectId(),  
-      qrCode: code,                         
+      event: new mongoose.Types.ObjectId(),  
+      user: new mongoose.Types.ObjectId(),
+      qrCode: code,
       status: 'active',
       price: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
     return { code };
   };
 
@@ -87,16 +72,13 @@ describe('POST /api/tickets/validate', () => {
 
     const res = await request(app)
       .post('/api/tickets/validate')
-      .send({ qrCode: code })              
+      .send({ qrCode: code })
       .expect(200);
 
-    // Response shape varies by your handler; keep this permissive:
-    expect(res.body).toEqual(
-      expect.objectContaining({ valid: expect.any(Boolean) })
-    );
+    // response shape can vary; just assert "valid" exists
+    expect(res.body).toEqual(expect.objectContaining({ valid: expect.any(Boolean) }));
 
     const updated = await TicketModel.findOne({ qrCode: code }).lean();
-    // ✅ your model uses status/usedAt:
     expect(updated?.status).toBe('used');
     expect(updated?.usedAt).toBeTruthy();
   });
@@ -107,11 +89,10 @@ describe('POST /api/tickets/validate', () => {
     await request(app).post('/api/tickets/validate').send({ qrCode: code }).expect(200);
     const res2 = await request(app).post('/api/tickets/validate').send({ qrCode: code }).expect(200);
 
-    // Allow any of these conventions:
     const already =
       res2.body?.alreadyCheckedIn === true ||
       res2.body?.valid === false ||
-      /already\s*checked\s*in|already\s*used/i.test(res2.body?.message ?? '');
+      /already\s*(checked\s*in|used)/i.test(res2.body?.message ?? '');
 
     expect(already).toBe(true);
 
@@ -121,11 +102,7 @@ describe('POST /api/tickets/validate', () => {
   });
 
   it('invalid code is rejected', async () => {
-    const res = await request(app)
-      .post('/api/tickets/validate')
-      .send({ qrCode: 'NON-EXISTENT' });
-
-    // some teams return 404/400; others return 200 with {valid:false}
+    const res = await request(app).post('/api/tickets/validate').send({ qrCode: 'NOPE' });
     expect([200, 400, 404]).toContain(res.status);
     if (res.status === 200) {
       expect(res.body).toEqual(expect.objectContaining({ valid: false }));
