@@ -13,6 +13,12 @@ let nextMonth: Date;
 let twoMonths: Date;
 let threeMonths: Date;
 
+process.on("warning", (warning) => {
+  if (warning.message.includes("Duplicate schema index")) {
+    console.info("⚠️  Ignored duplicate index warning:", warning.message);
+  }
+});
+
 beforeAll(async () => {
     jest.setTimeout(60000);
     mongoServer = await MongoMemoryServer.create();
