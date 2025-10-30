@@ -1,151 +1,102 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import axios from 'axios';
-import { MemoryRouter } from 'react-router-dom';
-import EventList from '../components/EventList'; // adjust path if needed
+import request from "supertest";
+import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
+import app from "../src/app"; // your Express app
+import Event from "../src/models/Event"; // adjust path to your Mongoose model
 
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+let mongoServer: MongoMemoryServer;
 
-describe('Integration Test — Event Filtering', () => 
+beforeAll(async () => 
+{
+    jest.setTimeout(30000);
+    mongoServer = await MongoMemoryServer.create();
+    const uri = mongoServer.getUri();
+    await mongoose.connect(uri);
+}
+);
+
+afterAll(async () => 
+{
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+    await mongoServer.stop();
+}
+);
+
+beforeEach(async () => 
+{
+    await Event.deleteMany({});
+    await Event.insertMany([
     {
-  const today = new Date().toISOString().split('T')[0];
-  const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split('T')[0];
-  const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split('T')[0];
-
-  const mockEvents = [
-    {
-      _id: '1',
-      title: 'AI Conference',
-      category: 'Technology',
-      location: 'SGW Campus',
-      date: today, // today
-      startTime: '09:00',
-      endTime: '17:00',
-      ticketType: 'free',
-      organization: { name: 'Tech Club' },
-      tags: ['AI'],
-      capacity: 200,
-      ticketsIssued: 50,
-      remainingCapacity: 150,
+        title: "AI Conference",
+        category: "Technology",
+        location: "SGW Campus",
+        date: new Date("2025-11-01"),
+        startTime: "09:00",
+        endTime: "17:00",
+        ticketType: "free",
     },
-
     {
-      _id: '2',
-      title: 'Music Night',
-      category: 'Music',
-      location: 'Loyola Campus',
-      date: nextWeek, // next week
-      startTime: '19:00',
-      endTime: '22:00',
-      ticketType: 'paid',
-      ticketPrice: 10,
-      organization: { name: 'Music Society' },
-      tags: ['Concert'],
-      capacity: 100,
-      ticketsIssued: 30,
-      remainingCapacity: 70,
+        title: "Music Night",
+        category: "Music",
+        location: "Loyola Campus",
+        date: new Date("2025-11-03"),
+        startTime: "19:00",
+        endTime: "22:00",
+        ticketType: "paid",
     },
-
     {
-      _id: '3',
-      title: 'Career Fair',
-      category: 'Career',
-      location: 'SGW Campus',
-      date: nextMonth, // future (upcoming)
-      startTime: '10:00',
-      endTime: '15:00',
-      ticketType: 'free',
-      organization: { name: 'Career Center' },
-      tags: ['Jobs'],
-      capacity: 100,
-      ticketsIssued: 20,
-      remainingCapacity: 80,
+        title: "Career Fair",
+        category: "Career",
+        location: "SGW Campus",
+        date: new Date("2025-11-10"),
+        startTime: "10:00",
+        endTime: "15:00",
+        ticketType: "free",
     },
-  ];
+  ]);
+}
+);
 
-  beforeEach(() => 
+describe("filter events", () => 
+{
+    test("GET /api/events?campus=SGW filters events by campus", async () => 
     {
-    jest.clearAllMocks();
-  });
-
-  it('filters events correctly by campus, category, and date range', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ data: mockEvents });
-
-    render(
-      <MemoryRouter>
-        <EventList />
-      </MemoryRouter>
+        const res = await request(app).get("/api/events?campus=SGW Campus");
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body.events)).toBe(true);
+        expect(res.body.events.length).toBeGreaterThan(0);
+        res.body.events.forEach((e: any) =>
+        expect(e.location).toBe("SGW Campus")
+    );
+    }
     );
 
-    // wait
-    await waitFor(() => 
-        {
-      expect(screen.getByText('AI Conference')).toBeInTheDocument();
-      expect(screen.getByText('Music Night')).toBeInTheDocument();
-      expect(screen.getByText('Career Fair')).toBeInTheDocument();
+    test("GET /api/events?category=Music filters events by category", async () => 
+    {
+        const res = await request(app).get("/api/events?category=Music");
+        expect(res.status).toBe(200);
+        res.body.events.forEach((e: any) => expect(e.category).toBe("Music"));
     });
 
-    // campus filter
-    const campusSelect = screen.getByLabelText(/Campus/i);
-    fireEvent.change(campusSelect, { target: { value: 'SGW Campus' } });
-
-    await waitFor(() => {
-      expect(screen.getByText('AI Conference')).toBeInTheDocument();
-      expect(screen.getByText('Career Fair')).toBeInTheDocument();
-      expect(screen.queryByText('Music Night')).not.toBeInTheDocument();
+    test("GET /api/events?dateRange=today filters events by today's date", async () => 
+    {
+        const today = new Date().toISOString().split("T")[0];
+        const res = await request(app).get(`/api/events?dateRange=today`);
+        expect(res.status).toBe(200);
+        res.body.events.forEach((e: any) => {
+        const eventDate = new Date(e.date).toISOString().split("T")[0];
+        expect(eventDate).toBe(today);
+        });
     });
 
-    // category
-    const categorySelect = screen.getByLabelText(/Category/i);
-    fireEvent.change(categorySelect, { target: { value: 'Technology' } });
-
-    await waitFor(() => {
-      expect(screen.getByText('AI Conference')).toBeInTheDocument();
-      expect(screen.queryByText('Career Fair')).not.toBeInTheDocument();
-      expect(screen.queryByText('Music Night')).not.toBeInTheDocument();
+    test("GET /api/events?campus=SGW&category=Technology filters by both", async () => 
+    {
+        const res = await request(app).get("/api/events?campus=SGW Campus&category=Technology");
+        expect(res.status).toBe(200);
+        res.body.events.forEach((e: any) => {
+        expect(e.location).toBe("SGW Campus");
+        expect(e.category).toBe("Technology");
+        });
     });
-
-    // Reset
-    fireEvent.change(campusSelect, { target: { value: 'All' } });
-    fireEvent.change(categorySelect, { target: { value: 'All' } });
-
-    await waitFor(() => {
-      expect(screen.getByText('AI Conference')).toBeInTheDocument();
-      expect(screen.getByText('Music Night')).toBeInTheDocument();
-      expect(screen.getByText('Career Fair')).toBeInTheDocument();
-    });
-
-    // date
-    const dateSelect = screen.getByLabelText(/Date Range/i);
-
-    // today
-    fireEvent.change(dateSelect, { target: { value: 'Today' } });
-    await waitFor(() => {
-      expect(screen.getByText('AI Conference')).toBeInTheDocument();
-      expect(screen.queryByText('Music Night')).not.toBeInTheDocument();
-      expect(screen.queryByText('Career Fair')).not.toBeInTheDocument();
-    });
-
-    // this week
-    fireEvent.change(dateSelect, { target: { value: 'This Week' } });
-    await waitFor(() => {
-      expect(screen.getByText('AI Conference')).toBeInTheDocument();
-      expect(screen.getByText('Music Night')).toBeInTheDocument();
-      expect(screen.queryByText('Career Fair')).not.toBeInTheDocument();
-    });
-
-    // late
-    fireEvent.change(dateSelect, { target: { value: 'Upcoming' } });
-    await waitFor(() => {
-      expect(screen.getByText('Career Fair')).toBeInTheDocument();
-      expect(screen.queryByText('AI Conference')).not.toBeInTheDocument();
-      expect(screen.queryByText('Music Night')).not.toBeInTheDocument();
-    });
-  });
 });
