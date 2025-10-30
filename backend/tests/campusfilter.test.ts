@@ -1,8 +1,8 @@
 import request from "supertest";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import app from "../src/app";
-import Event from "../src/models/Event"; 
+import app from "../src/app"; 
+import Event from "../src/models/Event";
 
 let mongoServer: MongoMemoryServer;
 
@@ -12,91 +12,107 @@ beforeAll(async () =>
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
-}
-);
 
-afterAll(async () => 
-{
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
-    await mongoServer.stop();
-}
-);
-
-beforeEach(async () => 
-{
-    await Event.deleteMany({});
+    // sample events
     await Event.insertMany([
-    {
-        title: "AI Conference",
-        category: "Technology",
-        location: "SGW Campus",
-        date: new Date("2025-11-01"),
-        startTime: "09:00",
-        endTime: "17:00",
-        ticketType: "free",
-    },
-    {
-        title: "Music Night",
-        category: "Music",
-        location: "Loyola Campus",
-        date: new Date("2025-11-03"),
+        {
+        title: "Basketball Tournament",
+        description: "Campus-wide basketball competition",
+        category: "sports",
+        date: new Date("2025-03-15"),
+        startTime: "10:00",
+        endTime: "18:00",
+        location: "Gym Hall A",
+        capacity: 100,
+        status: "published",
+        isApproved: true,
+        },
+        {
+        title: "Jazz Night",
+        description: "An evening of live jazz music",
+        category: "music",
+        date: new Date("2025-04-10"),
         startTime: "19:00",
         endTime: "22:00",
-        ticketType: "paid",
-    },
-    {
-        title: "Career Fair",
-        category: "Career",
-        location: "SGW Campus",
-        date: new Date("2025-11-10"),
-        startTime: "10:00",
+        location: "Student Lounge",
+        capacity: 80,
+        status: "published",
+        isApproved: true,
+        },
+        {
+        title: "Soccer Match",
+        description: "Men’s interfaculty soccer match",
+        category: "sports",
+        date: new Date("2025-03-20"),
+        startTime: "13:00",
         endTime: "15:00",
-        ticketType: "free",
-    },
-  ]);
-}
-);
-
-describe("filter events", () => 
-{
-    test("GET /api/events?campus=SGW filters events by campus", async () => 
-    {
-        const res = await request(app).get("/api/events?campus=SGW Campus");
-        expect(res.status).toBe(200);
-        expect(Array.isArray(res.body.events)).toBe(true);
-        expect(res.body.events.length).toBeGreaterThan(0);
-        res.body.events.forEach((e: any) =>
-        expect(e.location).toBe("SGW Campus")
-    );
-    }
-    );
-
-    test("GET /api/events?category=Music filters events by category", async () => 
-    {
-        const res = await request(app).get("/api/events?category=Music");
-        expect(res.status).toBe(200);
-        res.body.events.forEach((e: any) => expect(e.category).toBe("Music"));
+        location: "Main Field",
+        capacity: 150,
+        status: "published",
+        isApproved: true,
+        },
+    ]);
     });
 
-    test("GET /api/events?dateRange=today filters events by today's date", async () => 
-    {
-        const today = new Date().toISOString().split("T")[0];
-        const res = await request(app).get(`/api/events?dateRange=today`);
-        expect(res.status).toBe(200);
-        res.body.events.forEach((e: any) => {
-        const eventDate = new Date(e.date).toISOString().split("T")[0];
-        expect(eventDate).toBe(today);
+    afterAll(async () => 
+        {
+        await mongoose.connection.dropDatabase();
+        await mongoose.connection.close();
+        await mongoServer.stop();
         });
-    });
 
-    test("GET /api/events?campus=SGW&category=Technology filters by both", async () => 
-    {
-        const res = await request(app).get("/api/events?campus=SGW Campus&category=Technology");
-        expect(res.status).toBe(200);
-        res.body.events.forEach((e: any) => {
-        expect(e.location).toBe("SGW Campus");
-        expect(e.category).toBe("Technology");
+    describe("Feature 1.2 - Filter Campus Events", () => 
+        {
+        test("GET /api/events returns all events", async () => 
+            {
+            const res = await request(app).get("/api/events");
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty("events");
+            expect(Array.isArray(res.body.events)).toBe(true);
+            expect(res.body.events.length).toBe(3);
+            });
+
+        test("GET /api/events?category=sports filters events by category", async () => 
+            {
+            const res = await request(app).get("/api/events?category=sports");
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty("events");
+            res.body.events.forEach((event: any) => {
+            expect(event.category).toBe("sports");
+            });
+            expect(res.body.events.length).toBe(2);
+            });
+
+        test("GET /api/events?category=music filters events by category", async () => 
+            {
+            const res = await request(app).get("/api/events?category=music");
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty("events");
+            expect(res.body.events.length).toBe(1);
+            expect(res.body.events[0].title).toBe("Jazz Night");
+            });
+
+        test("GET /api/events?search=basketball filters events by search term in title/description", async () => 
+            {
+                const res = await request(app).get("/api/events?search=basketball");
+                expect(res.status).toBe(200);
+                expect(res.body.events.length).toBe(1);
+                expect(res.body.events[0].title).toContain("Basketball");
+            });
+
+        test("GET /api/events?date=2025-03-15 filters events by exact date", async () => 
+            {
+                const res = await request(app).get("/api/events?date=2025-03-15");
+                expect(res.status).toBe(200);
+                expect(res.body.events.length).toBe(1);
+                expect(res.body.events[0].title).toBe("Basketball Tournament");
+            });
+
+        test("GET /api/events?category=nonexistent returns empty array", async () => 
+            {
+                const res = await request(app).get("/api/events?category=nonexistent");
+                expect(res.status).toBe(200);
+                expect(Array.isArray(res.body.events)).toBe(true);
+                expect(res.body.events.length).toBe(0);
+            });
         });
-    });
-});
