@@ -90,7 +90,7 @@ beforeAll(async () => {
         },
     ]);
 
-    await mongoose.connection.db.command({ ping: 1 });
+    await mongoose.connection.db?.command({ ping: 1 });
     });
 
     afterAll(async () => {
