@@ -12,31 +12,35 @@ beforeAll(async () => {
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
 
-    const userId = new mongoose.Types.ObjectId();
-    const orgId = new mongoose.Types.ObjectId();
+    const now = new Date();
+    const nextMonth = new Date(now);
+    nextMonth.setMonth(now.getMonth() + 1);
+    const twoMonths = new Date(now);
+    twoMonths.setMonth(now.getMonth() + 2);
+    const threeMonths = new Date(now);
+    threeMonths.setMonth(now.getMonth() + 3);
 
-    // ✅ Ensure these match controller expectations
     await Event.insertMany([
-        {
+    {
         title: "Basketball Tournament",
         description: "Campus-wide basketball competition",
-        date: new Date("2025-12-15"),
+        date: nextMonth,                   // ✅ future date
         startTime: "10:00",
         endTime: "18:00",
         location: "Gym Hall A",
         category: "sports",
         ticketType: "free",
         capacity: 100,
-        status: "published",    // ✅ default visible status
-        isApproved: true,       // ✅ required for visibility
+        status: "published",
+        isApproved: true,
         organization: orgId,
         createdBy: userId,
         tags: ["competition", "athletics"]
-        },
-        {
+    },
+    {
         title: "Jazz Night",
         description: "An evening of live jazz music",
-        date: new Date("2025-12-10"),
+        date: twoMonths,                   // ✅ future date
         startTime: "19:00",
         endTime: "22:00",
         location: "Student Lounge",
@@ -49,11 +53,11 @@ beforeAll(async () => {
         organization: orgId,
         createdBy: userId,
         tags: ["music", "nightlife"]
-        },
-        {
+    },
+    {
         title: "Soccer Match",
         description: "Men’s interfaculty soccer match",
-        date: new Date("2025-12-20"),
+        date: threeMonths,                 // ✅ future date
         startTime: "13:00",
         endTime: "15:00",
         location: "Main Field",
@@ -65,9 +69,9 @@ beforeAll(async () => {
         organization: orgId,
         createdBy: userId,
         tags: ["sports", "game"]
-        }
+    }
     ]);
-    });
+
 
     afterAll(async () => {
     await mongoose.connection.dropDatabase();
