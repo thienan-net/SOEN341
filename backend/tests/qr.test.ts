@@ -54,60 +54,65 @@ afterEach(async () => {
 describe('POST /api/tickets/validate', () => {
   const seed = async () => {
     const code = 'TEST-CODE-123';
+    const ticketId = new mongoose.Types.ObjectId().toHexString();
 
   await TicketModel.create({
-    event: new Types.ObjectId(),
-    user: new Types.ObjectId(),
-    ticketId: new Types.ObjectId().toHexString(),   // or any unique string/uuid
-    qrCode: code,
+    event: new mongoose.Types.ObjectId(),
+    user: new mongoose.Types.ObjectId(),
+    ticketId,          // ⬅ required by your schema
+    qrCode: code,      // keep for DB querying if needed
     status: 'active',
     price: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
-    });
+  });
 
-    return { code };
+
+    return { ticketId, code };
   };
 
-  it('first scan validates & marks ticket as used', async () => {
-    const { code } = await seed();
+ it('first scan validates & marks ticket as used', async () => {
+  const { ticketId } = await seed();
 
-    const res = await request(app)
-      .post('/api/tickets/validate')
-      .send({ qrCode: code })
-      .expect(200);
+  const res = await request(app)
+    .post('/api/tickets/validate')
+    .send({ ticketId })              // ⬅ use ticketId, not qrCode
+    .expect(200);
 
-    // response shape can vary; just assert "valid" exists
-    expect(res.body).toEqual(expect.objectContaining({ valid: expect.any(Boolean) }));
+  expect(res.body).toEqual(expect.objectContaining({ valid: expect.any(Boolean) }));
 
-    const updated = await TicketModel.findOne({ qrCode: code }).lean();
-    expect(updated?.status).toBe('used');
-    expect(updated?.usedAt).toBeTruthy();
-  });
+  const updated = await TicketModel.findOne({ ticketId }).lean(); // ⬅ query by ticketId
+  expect(updated?.status).toBe('used');
+  expect(updated?.usedAt).toBeTruthy();
+});
 
-  it('second scan is idempotent (already used)', async () => {
-    const { code } = await seed();
+it('second scan is idempotent', async () => {
+  const { ticketId } = await seed();
 
-    await request(app).post('/api/tickets/validate').send({ qrCode: code }).expect(200);
-    const res2 = await request(app).post('/api/tickets/validate').send({ qrCode: code }).expect(200);
+  await request(app).post('/api/tickets/validate').send({ ticketId }).expect(200);
+  const res2 = await request(app).post('/api/tickets/validate').send({ ticketId }).expect(200);
 
-    const already =
-      res2.body?.alreadyCheckedIn === true ||
-      res2.body?.valid === false ||
-      /already\s*(checked\s*in|used)/i.test(res2.body?.message ?? '');
+  const already =
+    res2.body?.alreadyCheckedIn === true ||
+    res2.body?.valid === false ||
+    /already\s*(checked\s*in|used)/i.test(res2.body?.message ?? '');
 
-    expect(already).toBe(true);
+  expect(already).toBe(true);
 
-    const after = await TicketModel.findOne({ qrCode: code }).lean();
-    expect(after?.status).toBe('used');
-    expect(after?.usedAt).toBeTruthy();
-  });
+  const after = await TicketModel.findOne({ ticketId }).lean();
+  expect(after?.status).toBe('used');
+  expect(after?.usedAt).toBeTruthy();
+});
 
-  it('invalid code is rejected', async () => {
-    const res = await request(app).post('/api/tickets/validate').send({ qrCode: 'NOPE' });
-    expect([200, 400, 404]).toContain(res.status);
-    if (res.status === 200) {
-      expect(res.body).toEqual(expect.objectContaining({ valid: false }));
-    }
-  });
+it('invalid ticketId is rejected', async () => {
+  const res = await request(app)
+    .post('/api/tickets/validate')
+    .send({ ticketId: 'NON_EXISTENT' });
+
+  // pick the contract you want; 404 is a clear choice
+  expect([404, 200, 400]).toContain(res.status);
+  if (res.status === 200) {
+    expect(res.body).toEqual(expect.objectContaining({ valid: false }));
+  }
+});
 });
