@@ -6,14 +6,17 @@ import Event from "../src/models/Event";
 
 let mongoServer: MongoMemoryServer;
 
-beforeAll(async () => 
-{
+beforeAll(async () => {
     jest.setTimeout(30000);
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
 
-    // sample events
+    // sample user & org
+    const userId = new mongoose.Types.ObjectId();
+    const orgId = new mongoose.Types.ObjectId();
+
+    // requirement info
     await Event.insertMany([
         {
         title: "Basketball Tournament",
@@ -26,6 +29,9 @@ beforeAll(async () =>
         capacity: 100,
         status: "published",
         isApproved: true,
+        ticketType: "free",      
+        organization: orgId,     
+        createdBy: userId,       
         },
         {
         title: "Jazz Night",
@@ -38,6 +44,9 @@ beforeAll(async () =>
         capacity: 80,
         status: "published",
         isApproved: true,
+        ticketType: "free",
+        organization: orgId,
+        createdBy: userId,
         },
         {
         title: "Soccer Match",
@@ -50,6 +59,9 @@ beforeAll(async () =>
         capacity: 150,
         status: "published",
         isApproved: true,
+        ticketType: "free",
+        organization: orgId,
+        createdBy: userId,
         },
     ]);
     });
