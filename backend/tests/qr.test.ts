@@ -48,6 +48,21 @@ afterEach(async () => {
   for (const c of cols) await c.deleteMany({});
 });
 
+async function hitValidate(app: import('express').Express, payload: any) {
+  const res = await request(app)
+    .post('/api/tickets/validate')
+    .set('Accept', 'application/json')
+    .send(payload);
+
+  if (res.status !== 200) {
+    // Shows exactly what the validator wants
+    // This will appear in your CI logs
+    // eslint-disable-next-line no-console
+    console.log('DEBUG /validate:', res.status, JSON.stringify(res.body, null, 2));
+  }
+  return res;
+}
+
 describe('POST /api/tickets/validate', () => {
   const seed = async () => {
     const ticketId = new Types.ObjectId().toHexString(); // valid MongoId string
@@ -68,8 +83,10 @@ describe('POST /api/tickets/validate', () => {
   };
 
   it('first scan validates & marks ticket as used', async () => {
-    const { ticketId } = await seed();
+    const { ticketId, qrCode } = await seed();
 
+      await hitValidate(app, { ticketId });
+      
     // Send exactly what the route expects. If it validates ticketId, no need to send qrCode.
     const res = await request(app)
       .post('/api/tickets/validate')
