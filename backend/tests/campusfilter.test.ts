@@ -5,7 +5,7 @@ import app from "../src/app";
 import Event from "../src/models/Event";
 
 // --- extend timeout for slow CI environments ---
-jest.setTimeout(60000);
+jest.setTimeout(10000);
 
 let mongoServer: MongoMemoryServer;
 let orgId: mongoose.Types.ObjectId;
