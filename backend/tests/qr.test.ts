@@ -50,14 +50,14 @@ afterEach(async () => {
 
 describe('POST /api/tickets/validate', () => {
   const seed = async () => {
-    const ticketId = new Types.ObjectId().toHexString(); // valid MongoId string
-    const qrCode = 'TEST-CODE-123';
+    const ticketId = new Types.ObjectId().toHexString();
+    const qrCode = 'TEST-CODE-123'; // the string we will post back as qrData
 
     await TicketModel.create({
       event: new Types.ObjectId(),
       user: new Types.ObjectId(),
       ticketId,
-      qrCode,
+      qrCode,              // <-- lookup likely uses this
       status: 'active',
       price: 0,
       createdAt: new Date(),
@@ -68,12 +68,12 @@ describe('POST /api/tickets/validate', () => {
   };
 
   it('first scan validates & marks ticket as used', async () => {
-    const { ticketId } = await seed();
+    const { ticketId, qrCode } = await seed();
 
-    // qrData as JSON STRING (most likely contract)
+    // qrData is the QR string (qrCode), not ticketId
     const res = await request(app)
       .post('/api/tickets/validate')
-      .send({ qrData: JSON.stringify({ ticketId }) })
+      .send({ qrData: qrCode })
       .expect(200);
 
     expect(res.body).toEqual(expect.objectContaining({ valid: expect.any(Boolean) }));
@@ -84,16 +84,16 @@ describe('POST /api/tickets/validate', () => {
   });
 
   it('second scan is idempotent (already used)', async () => {
-    const { ticketId } = await seed();
+    const { ticketId, qrCode } = await seed();
 
     await request(app)
       .post('/api/tickets/validate')
-      .send({ qrData: JSON.stringify({ ticketId }) })
+      .send({ qrData: qrCode })
       .expect(200);
 
     const res2 = await request(app)
       .post('/api/tickets/validate')
-      .send({ qrData: JSON.stringify({ ticketId }) })
+      .send({ qrData: qrCode })
       .expect(200);
 
     const already =
@@ -108,14 +108,14 @@ describe('POST /api/tickets/validate', () => {
     expect(after?.usedAt).toBeTruthy();
   });
 
-  it('invalid ticketId is rejected', async () => {
-    const nonexistent = new Types.ObjectId().toHexString();
+  it('invalid code is rejected', async () => {
+    const badCode = 'NOPE-' + new Types.ObjectId().toHexString().slice(0, 6);
 
     const res = await request(app)
       .post('/api/tickets/validate')
-      .send({ qrData: JSON.stringify({ ticketId: nonexistent }) });
+      .send({ qrData: badCode });
 
-    // keep permissive until the route contract is finalized
+    // Keep permissive until contract finalized
     expect([404, 200, 400]).toContain(res.status);
     if (res.status === 200) {
       expect(res.body).toEqual(expect.objectContaining({ valid: false }));
