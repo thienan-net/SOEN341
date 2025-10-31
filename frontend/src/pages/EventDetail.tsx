@@ -88,10 +88,14 @@ const EventDetail: React.FC = () => {
 
     setClaimingTicket(true);
     try {
+      console.log('Claiming ticket for eventId:', id);
+      console.log('User:', user);
       await axios.post('/tickets/claim', { eventId: id });
       toast.success('Ticket claimed successfully!');
       fetchEvent(); // Refresh event data
     } catch (error: any) {
+      console.error('Ticket claim error:', error);
+      console.error('Error response:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to claim ticket');
     } finally {
       setClaimingTicket(false);

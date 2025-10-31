@@ -8,6 +8,8 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/auth';
 import eventRoutes from './routes/events';
 import ticketRoutes from './routes/tickets';
+import userRoutes from './routes/users';
+import qrRoutes from './routes/qr';
 
 
 dotenv.config();
@@ -66,6 +68,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/qr', qrRoutes);
 
 
 // Health check endpoint
