@@ -4,19 +4,16 @@ import express from 'express';
 import mongoose, { Types } from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-// Mount ONLY the tickets router
 import ticketsRouter from '../src/routes/tickets';
 import TicketModel from '../src/models/Ticket';
 import EventModel from '../src/models/Event';
 
-// --- auth mock: always organizer; organization comes from global __TEST_ORG__
 jest.mock('../src/middleware/auth', () => {
   const { Types } = require('mongoose');
   const base = (req: any, _res: any, next: any) => {
     req.user = {
       _id: new Types.ObjectId(),
       roles: ['organizer'],
-      // set in seed(): (global as any).__TEST_ORG__ = <ObjectId>
       organization: (global as any).__TEST_ORG__,
     };
     next();
@@ -54,14 +51,18 @@ afterEach(async () => {
   for (const c of cols) await c.deleteMany({});
 });
 
-/**
- * Seed one published/approved future event in org, plus one active ticket.
- * IMPORTANT: we store ticket.qrCode as the EXACT JSON string; tests must send
- * the same string back as { qrData: "<that string>" }.
- */
+/** Seed one approved/published future event and one active ticket. */
 const seed = async () => {
   const orgId = new Types.ObjectId();
-  (global as any).__TEST_ORG__ = orgId; // used by auth mock
+  (global as any).__TEST_ORG__ = orgId;
+
+  // Pull a valid category from the schema enum (avoids hard-coding)
+  const categoryEnum: string[] =
+    ((EventModel.schema.path('category') as any)?.enumValues as string[]) ?? [];
+  const validCategory = categoryEnum[0] ?? 'other';
+
+  // createdBy is required by your Event schema
+  const createdBy = new Types.ObjectId();
 
   const event = await EventModel.create({
     title: 'Test Event',
@@ -72,31 +73,31 @@ const seed = async () => {
     location: 'Hall A',
     capacity: 100,
     organization: orgId,
+    createdBy,                 // ✅ required
     status: 'published',
     isApproved: true,
     ticketType: 'free',
     ticketPrice: 0,
-    category: 'general',
+    category: validCategory,   // ✅ valid enum
   });
 
-  // 👇 Make TS aware that _id is an ObjectId
   const eventIdObj = (event as mongoose.Document & { _id: Types.ObjectId })._id;
-  const eventId = eventIdObj.toHexString(); // use string inside QR payload
+  const eventId = eventIdObj.toHexString();
 
   const ticketId = new Types.ObjectId().toHexString();
   const qrPayload = {
     ticketId,
-    eventId, // string inside the QR JSON
+    eventId,
     userId: new Types.ObjectId().toHexString(),
     timestamp: new Date().toISOString(),
   };
-  const qrDataString = JSON.stringify(qrPayload); // <-- this is what the route expects
+  const qrDataString = JSON.stringify(qrPayload);
 
   await TicketModel.create({
     ticketId,
-    event: eventIdObj, // store as ObjectId in DB
+    event: eventIdObj,
     user: new Types.ObjectId(),
-    qrCode: qrDataString, // EXACT string stored in DB
+    qrCode: qrDataString, // exact string the route expects
     status: 'active',
     price: 0,
     createdAt: new Date(),
@@ -112,7 +113,7 @@ describe('POST /api/tickets/validate (expects { qrData: string })', () => {
 
     const res = await request(app)
       .post('/api/tickets/validate')
-      .send({ qrData: qrDataString }) // <-- send the exact stored string
+      .send({ qrData: qrDataString })
       .expect(200);
 
     expect(res.body).toEqual(
@@ -128,8 +129,6 @@ describe('POST /api/tickets/validate (expects { qrData: string })', () => {
 
   it('returns 404 (or 400) for a non-existing/invalid code', async () => {
     await seed();
-
-    // same shape (string) but different content -> not found (or 400)
     const bad = await request(app)
       .post('/api/tickets/validate')
       .send({
@@ -140,24 +139,14 @@ describe('POST /api/tickets/validate (expects { qrData: string })', () => {
           timestamp: new Date().toISOString(),
         }),
       });
-
     expect([404, 400]).toContain(bad.status);
   });
 
-  it('is repeatable: validate twice still returns 200 (this route does not mark used)', async () => {
+  it('is repeatable: validate twice still returns 200 (route does not mark used)', async () => {
     const { qrDataString } = await seed();
 
-    await request(app)
-      .post('/api/tickets/validate')
-      .send({ qrData: qrDataString })
-      .expect(200);
-
-    // still 200 because marking "used" happens at POST /:id/use, not here
-    const res2 = await request(app)
-      .post('/api/tickets/validate')
-      .send({ qrData: qrDataString })
-      .expect(200);
-
+    await request(app).post('/api/tickets/validate').send({ qrData: qrDataString }).expect(200);
+    const res2 = await request(app).post('/api/tickets/validate').send({ qrData: qrDataString }).expect(200);
     expect(res2.body.valid).toBe(true);
   });
 });
