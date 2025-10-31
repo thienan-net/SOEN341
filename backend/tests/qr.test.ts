@@ -79,10 +79,14 @@ const seed = async () => {
     category: 'general',
   });
 
+  // 👇 Make TS aware that _id is an ObjectId
+  const eventIdObj = (event as mongoose.Document & { _id: Types.ObjectId })._id;
+  const eventId = eventIdObj.toHexString(); // use string inside QR payload
+
   const ticketId = new Types.ObjectId().toHexString();
   const qrPayload = {
     ticketId,
-    eventId: event._id.toHexString(),
+    eventId, // string inside the QR JSON
     userId: new Types.ObjectId().toHexString(),
     timestamp: new Date().toISOString(),
   };
@@ -90,7 +94,7 @@ const seed = async () => {
 
   await TicketModel.create({
     ticketId,
-    event: event._id,
+    event: eventIdObj, // store as ObjectId in DB
     user: new Types.ObjectId(),
     qrCode: qrDataString, // EXACT string stored in DB
     status: 'active',
@@ -99,7 +103,7 @@ const seed = async () => {
     updatedAt: new Date(),
   });
 
-  return { event, ticketId, qrDataString };
+  return { eventId, ticketId, qrDataString };
 };
 
 describe('POST /api/tickets/validate (expects { qrData: string })', () => {
