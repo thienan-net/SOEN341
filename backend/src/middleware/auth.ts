@@ -47,9 +47,17 @@ export const requireApproval = (req: AuthRequest, res: Response, next: NextFunct
     return res.status(401).json({ message: 'Authentication required' });
   }
 
+  console.log('requireApproval check:', {
+    userId: req.user._id,
+    role: req.user.role,
+    isApproved: req.user.isApproved
+  });
+
   if (!req.user.isApproved) {
+    console.log('User not approved, returning 403');
     return res.status(403).json({ message: 'Account pending approval' });
   }
 
+  console.log('User approved, proceeding...');
   next();
 };

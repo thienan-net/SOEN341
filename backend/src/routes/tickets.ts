@@ -16,8 +16,18 @@ router.post('/claim', authenticate, authorize('student'), requireApproval, [
   body('paymentMethod').optional().isString() // For future payment integration
 ], async (req: AuthRequest, res: express.Response) => {
   try {
+    console.log('Ticket claim request:', {
+      body: req.body,
+      user: req.user ? {
+        id: req.user._id,
+        role: req.user.role,
+        isApproved: req.user.isApproved
+      } : null
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -29,9 +39,9 @@ router.post('/claim', authenticate, authorize('student'), requireApproval, [
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    if (event.status !== 'published' || !event.isApproved) {
-      return res.status(400).json({ message: 'Event is not available for ticket claiming' });
-    }
+    // if (event.status !== 'published' || !event.isApproved) {
+    //   return res.status(400).json({ message: 'Event is not available for ticket claiming' });
+    // }
 
     // Check if event date is in the future
     if (event.date < new Date()) {
