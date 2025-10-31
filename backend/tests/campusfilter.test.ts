@@ -131,6 +131,7 @@ describe('Feature 1.2 – Filter Campus Events', () => {
     expect(events.length).toBe(1);
     expect(events[0].title).toBe('Jazz Night');
   });
+  
 
   it('GET /api/events?search=basketball filters by search term', async () => {
     await seedEvents();
