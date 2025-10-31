@@ -1,4 +1,3 @@
-// backend/tests/qr.test.ts
 import request from 'supertest';
 import express from 'express';
 import mongoose, { Types } from 'mongoose';
@@ -69,6 +68,7 @@ const seed = async () => {
     createdBy: new Types.ObjectId(),
   });
   const createdBy = new Types.ObjectId();
+
   // Create a future, approved, published event in that org
   const event = await EventModel.create({
     title: 'Test Event',
@@ -84,24 +84,21 @@ const seed = async () => {
     isApproved: true,
     ticketType: 'free',
     ticketPrice: 0,
-    category: 'social', // use a valid enum for your Event schema
+    category: 'social', 
   });
 
 // Create a user the ticket will reference (helps populate('user'))
 const userId = new Types.ObjectId();
 const User = mongoose.model('User');
 
-// Use a unique email to avoid unique index collisions in repeated test runs
 await User.create({
   _id: userId,
   firstName: 'Test',
   lastName: 'User',
   email: `seed_${userId.toHexString()}@example.com`,
-  role: 'student',              // <-- required by your schema
-  password: 'Password123!',     // <-- required; pre-save hook will hash if present
+  role: 'student',             
+  password: 'Password123!',  
   studentId: `S${userId.toHexString().slice(-7)}`,
-  // If your schema has other required fields, add safe defaults here, e.g.:
-  // isApproved: true, isVerified: true, status: 'active'
 });
 
   const eventIdObj = (event as mongoose.Document & { _id: Types.ObjectId })._id;
