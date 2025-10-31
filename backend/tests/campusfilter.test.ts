@@ -36,61 +36,73 @@ beforeAll(async () => {
     });
 
     beforeEach(async () => {
-    await Event.deleteMany({});
+        await Event.deleteMany({});
 
-    await Event.insertMany([
-        {
-        title: "Basketball Tournament",
-        description: "Campus-wide basketball competition",
-        date: nextMonth,
-        startTime: "10:00",
-        endTime: "18:00",
-        location: "Gym Hall A",
-        category: "sports",
-        ticketType: "free",
-        capacity: 100,
-        status: "published",
-        isApproved: true,
-        organization: orgId,
-        createdBy: userId,
-        tags: ["competition", "athletics"],
-        },
-        {
-        title: "Jazz Night",
-        description: "An evening of live jazz music",
-        date: twoMonths,
-        startTime: "19:00",
-        endTime: "22:00",
-        location: "Student Lounge",
-        category: "cultural",
-        ticketType: "paid",
-        ticketPrice: 15,
-        capacity: 80,
-        status: "published",
-        isApproved: true,
-        organization: orgId,
-        createdBy: userId,
-        tags: ["music", "nightlife"],
-        },
-        {
-        title: "Soccer Match",
-        description: "Men’s interfaculty soccer match",
-        date: threeMonths,
-        startTime: "13:00",
-        endTime: "15:00",
-        location: "Main Field",
-        category: "sports",
-        ticketType: "free",
-        capacity: 150,
-        status: "published",
-        isApproved: true,
-        organization: orgId,
-        createdBy: userId,
-        tags: ["sports", "game"],
-        },
+        const userId = new mongoose.Types.ObjectId();
+        const orgId  = new mongoose.Types.ObjectId();
+
+        // Always future dates so date >= now passes controller filter
+        const now = new Date();
+        const plus1 = new Date(now.getFullYear(), now.getMonth() + 1, 10);
+        const plus2 = new Date(now.getFullYear(), now.getMonth() + 2, 10);
+        const plus3 = new Date(now.getFullYear(), now.getMonth() + 3, 10);
+
+        await Event.insertMany([
+            {
+            title: "Basketball Tournament",
+            description: "Campus-wide basketball competition",
+            date: plus1,
+            startTime: "10:00",
+            endTime: "18:00",
+            location: "Gym Hall A",
+            category: "sports",
+            ticketType: "free",
+            capacity: 100,
+            status: "published",
+            isApproved: true,
+            organization: orgId,
+            createdBy: userId,
+            tags: ["competition", "athletics"],
+            },
+            {
+            title: "Jazz Night",
+            description: "An evening of live jazz music",
+            date: plus2,
+            startTime: "19:00",
+            endTime: "22:00",
+            location: "Student Lounge",
+            category: "cultural",
+            ticketType: "paid",
+            ticketPrice: 15,
+            capacity: 80,
+            status: "published",
+            isApproved: true,
+            organization: orgId,
+            createdBy: userId,
+            tags: ["music", "nightlife"],
+            },
+            {
+            title: "Soccer Match",
+            description: "Men’s interfaculty soccer match",
+            date: plus3,
+            startTime: "13:00",
+            endTime: "15:00",
+            location: "Main Field",
+            category: "sports",
+            ticketType: "free",
+            capacity: 150,
+            status: "published",
+            isApproved: true,
+            organization: orgId,
+            createdBy: userId,
+            tags: ["sports", "game"],
+            },
     ]);
 
-    await mongoose.connection.db?.command({ ping: 1 });
+    // Flush to ensure visibility
+    if (mongoose.connection.db) {
+        await mongoose.connection.db.command({ ping: 1 });
+    }
     });
 
     afterAll(async () => {
