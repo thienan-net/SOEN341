@@ -56,8 +56,8 @@ describe('POST /api/tickets/validate', () => {
     await TicketModel.create({
       event: new Types.ObjectId(),
       user: new Types.ObjectId(),
-      ticketId,      // required by your schema
-      qrCode,        // keep in DB if your model stores it
+      ticketId,     // required by your schema
+      qrCode,       // stored in DB if your model keeps it
       status: 'active',
       price: 0,
       createdAt: new Date(),
@@ -68,13 +68,13 @@ describe('POST /api/tickets/validate', () => {
   };
 
   it('first scan validates & marks ticket as used', async () => {
-    const { ticketId, qrCode } = await seed();
+    const { ticketId } = await seed();
 
-
+    // qrData as STRING (scanner payload), not an object
     const res = await request(app)
-        .post('/api/tickets/validate')
-        .send({ qrData: { ticketId } })       // ← send qrData object
-        .expect(200);
+      .post('/api/tickets/validate')
+      .send({ qrData: ticketId })
+      .expect(200);
 
     expect(res.body).toEqual(expect.objectContaining({ valid: expect.any(Boolean) }));
 
@@ -86,11 +86,15 @@ describe('POST /api/tickets/validate', () => {
   it('second scan is idempotent (already used)', async () => {
     const { ticketId } = await seed();
 
-    await request(app).post('/api/tickets/validate').send({ qrData: { ticketId } }).expect(200);
+    await request(app)
+      .post('/api/tickets/validate')
+      .send({ qrData: ticketId })
+      .expect(200);
+
     const res2 = await request(app)
-        .post('/api/tickets/validate')
-        .send({ qrData: { ticketId } })
-        .expect(200);
+      .post('/api/tickets/validate')
+      .send({ qrData: ticketId })
+      .expect(200);
 
     const already =
       res2.body?.alreadyCheckedIn === true ||
@@ -105,12 +109,16 @@ describe('POST /api/tickets/validate', () => {
   });
 
   it('invalid ticketId is rejected', async () => {
-    // Use a *valid* ObjectId that doesn't exist to avoid format 400s
+    // Use a valid-but-nonexistent ObjectId so format passes but lookup fails
     const nonexistent = new Types.ObjectId().toHexString();
-    const bad = await request(app)
-        .post('/api/tickets/validate')
-        .send({ qrData: { ticketId: nonexistent } });
-    expect([404, 200, 400]).toContain(bad.status);
-    if (bad.status === 200) expect(bad.body.valid).toBe(false);
+
+    const res = await request(app)
+      .post('/api/tickets/validate')
+      .send({ qrData: nonexistent });
+
+    expect([404, 200, 400]).toContain(res.status);
+    if (res.status === 200) {
+      expect(res.body).toEqual(expect.objectContaining({ valid: false }));
+    }
   });
 });
