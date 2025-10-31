@@ -61,8 +61,13 @@ const seed = async () => {
 
   // Create an organization doc so populate('organization') returns a document
   const Organization = mongoose.model('Organization');
-  await Organization.create({ _id: orgId, name: 'Test Org' }); // add other required fields if your schema needs them
-
+  await Organization.create({
+    _id: orgId,
+    name: 'Test Org',
+    description: 'Seeded test organization',
+    contactEmail: 'org@example.com',
+    createdBy: new Types.ObjectId(),
+  });
   const createdBy = new Types.ObjectId();
   // Create a future, approved, published event in that org
   const event = await EventModel.create({
