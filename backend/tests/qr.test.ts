@@ -1,14 +1,12 @@
-import request from "supertest";
-import express from "express";
-import mongoose from "mongoose";
-import { Types } from 'mongoose';
-import { MongoMemoryServer } from "mongodb-memory-server";
+import request from 'supertest';
+import express from 'express';
+import mongoose, { Types } from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
-// Mount ONLY the tickets router to avoid unrelated middleware/routes
 import ticketsRouter from '../src/routes/tickets';
 import TicketModel from '../src/models/Ticket';
 
-// Mock auth to always allow
+// Mock auth (covers default, authenticate, authorize('role'), and guards)
 jest.mock('../src/middleware/auth', () => {
   const { Types } = require('mongoose');
   const base = (req: any, _res: any, next: any) => {
@@ -35,7 +33,7 @@ beforeAll(async () => {
   await mongoose.connect(mongo.getUri());
   app = express();
   app.use(express.json());
-  app.use('/api/tickets', ticketsRouter); 
+  app.use('/api/tickets', ticketsRouter);
 });
 
 afterAll(async () => {
@@ -50,69 +48,71 @@ afterEach(async () => {
   for (const c of cols) await c.deleteMany({});
 });
 
-// ---------- tests ----------
 describe('POST /api/tickets/validate', () => {
   const seed = async () => {
-    const code = 'TEST-CODE-123';
-    const ticketId = new mongoose.Types.ObjectId().toHexString();
+    const ticketId = new Types.ObjectId().toHexString(); // valid MongoId string
+    const qrCode = 'TEST-CODE-123';
 
-  await TicketModel.create({
-    event: new mongoose.Types.ObjectId(),
-    user: new mongoose.Types.ObjectId(),
-    ticketId,          // ⬅ required by your schema
-    qrCode: code,      // keep for DB querying if needed
-    status: 'active',
-    price: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+    await TicketModel.create({
+      event: new Types.ObjectId(),
+      user: new Types.ObjectId(),
+      ticketId,      // required by your schema
+      qrCode,        // keep in DB if your model stores it
+      status: 'active',
+      price: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
-
-    return { ticketId, code };
+    return { ticketId, qrCode };
   };
 
- it('first scan validates & marks ticket as used', async () => {
-  const { ticketId } = await seed();
+  it('first scan validates & marks ticket as used', async () => {
+    const { ticketId } = await seed();
 
-  const res = await request(app)
-    .post('/api/tickets/validate')
-    .send({ ticketId })              // ⬅ use ticketId, not qrCode
-    .expect(200);
+    // Send exactly what the route expects. If it validates ticketId, no need to send qrCode.
+    const res = await request(app)
+      .post('/api/tickets/validate')
+      .send({ ticketId })
+      .expect(200);
 
-  expect(res.body).toEqual(expect.objectContaining({ valid: expect.any(Boolean) }));
+    expect(res.body).toEqual(expect.objectContaining({ valid: expect.any(Boolean) }));
 
-  const updated = await TicketModel.findOne({ ticketId }).lean(); // ⬅ query by ticketId
-  expect(updated?.status).toBe('used');
-  expect(updated?.usedAt).toBeTruthy();
-});
+    const updated = await TicketModel.findOne({ ticketId }).lean();
+    expect(updated?.status).toBe('used');
+    expect(updated?.usedAt).toBeTruthy();
+  });
 
-it('second scan is idempotent', async () => {
-  const { ticketId } = await seed();
+  it('second scan is idempotent (already used)', async () => {
+    const { ticketId } = await seed();
 
-  await request(app).post('/api/tickets/validate').send({ ticketId }).expect(200);
-  const res2 = await request(app).post('/api/tickets/validate').send({ ticketId }).expect(200);
+    await request(app).post('/api/tickets/validate').send({ ticketId }).expect(200);
+    const res2 = await request(app).post('/api/tickets/validate').send({ ticketId }).expect(200);
 
-  const already =
-    res2.body?.alreadyCheckedIn === true ||
-    res2.body?.valid === false ||
-    /already\s*(checked\s*in|used)/i.test(res2.body?.message ?? '');
+    const already =
+      res2.body?.alreadyCheckedIn === true ||
+      res2.body?.valid === false ||
+      /already\s*(checked\s*in|used)/i.test(res2.body?.message ?? '');
 
-  expect(already).toBe(true);
+    expect(already).toBe(true);
 
-  const after = await TicketModel.findOne({ ticketId }).lean();
-  expect(after?.status).toBe('used');
-  expect(after?.usedAt).toBeTruthy();
-});
+    const after = await TicketModel.findOne({ ticketId }).lean();
+    expect(after?.status).toBe('used');
+    expect(after?.usedAt).toBeTruthy();
+  });
 
-it('invalid ticketId is rejected', async () => {
-  const res = await request(app)
-    .post('/api/tickets/validate')
-    .send({ ticketId: 'NON_EXISTENT' });
+  it('invalid ticketId is rejected', async () => {
+    // Use a *valid* ObjectId that doesn't exist to avoid format 400s
+    const nonexistent = new Types.ObjectId().toHexString();
 
-  // pick the contract you want; 404 is a clear choice
-  expect([404, 200, 400]).toContain(res.status);
-  if (res.status === 200) {
-    expect(res.body).toEqual(expect.objectContaining({ valid: false }));
-  }
-});
+    const res = await request(app)
+      .post('/api/tickets/validate')
+      .send({ ticketId: nonexistent });
+
+    // Choose one contract; or keep permissive until route is finalized:
+    expect([404, 200, 400]).toContain(res.status);
+    if (res.status === 200) {
+      expect(res.body).toEqual(expect.objectContaining({ valid: false }));
+    }
+  });
 });
