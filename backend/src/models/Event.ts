@@ -21,6 +21,7 @@ export interface IEvent extends Document {
   contactInfo?: string;
   createdAt: Date;
   updatedAt: Date;
+  registrations?: number; 
 }
 
 const EventSchema = new Schema<IEvent>({
@@ -106,7 +107,12 @@ const EventSchema = new Schema<IEvent>({
   contactInfo: {
     type: String,
     trim: true
-  }
+  },
+  registrations: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
 }, {
   timestamps: true
 });
