@@ -7,6 +7,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import ticketsRouter from '../src/routes/tickets';
 import TicketModel from '../src/models/Ticket';
 import EventModel from '../src/models/Event';
+import '../src/models/User';
+import '../src/models/Organization';
 
 jest.mock('../src/middleware/auth', () => {
   const { Types } = require('mongoose');
@@ -51,61 +53,66 @@ afterEach(async () => {
   for (const c of cols) await c.deleteMany({});
 });
 
+
 /** Seed one approved/published future event and one active ticket. */
 const seed = async () => {
   const orgId = new Types.ObjectId();
-  (global as any).__TEST_ORG__ = orgId;
+  (global as any).__TEST_ORG__ = orgId; // used in the auth mock
 
-  // Pull a valid category from the schema enum (avoids hard-coding)
-  const categoryEnum: string[] =
-    ((EventModel.schema.path('category') as any)?.enumValues as string[]) ?? [];
-  const validCategory = categoryEnum[0] ?? 'other';
+  // Create an organization doc so populate('organization') returns a document
+  const Organization = mongoose.model('Organization');
+  await Organization.create({ _id: orgId, name: 'Test Org' }); // add other required fields if your schema needs them
 
-  // createdBy is required by your Event schema
   const createdBy = new Types.ObjectId();
-
+  // Create a future, approved, published event in that org
   const event = await EventModel.create({
     title: 'Test Event',
     description: '…',
-    date: new Date(Date.now() + 24 * 3600 * 1000), // tomorrow
+    date: new Date(Date.now() + 24 * 3600 * 1000),
     startTime: '10:00',
     endTime: '12:00',
     location: 'Hall A',
     capacity: 100,
     organization: orgId,
-    createdBy,                 // ✅ required
+    createdBy,
     status: 'published',
     isApproved: true,
     ticketType: 'free',
     ticketPrice: 0,
-    category: validCategory,   // ✅ valid enum
+    category: 'social', // use a valid enum for your Event schema
   });
+
+  // Optional: create a user the ticket will reference (helps populate('user'))
+  const userId = new Types.ObjectId();
+  const User = mongoose.model('User');
+  await User.create({ _id: userId, firstName: 'Test', lastName: 'User', email: 't@example.com' });
 
   const eventIdObj = (event as mongoose.Document & { _id: Types.ObjectId })._id;
   const eventId = eventIdObj.toHexString();
-
   const ticketId = new Types.ObjectId().toHexString();
   const qrPayload = {
     ticketId,
     eventId,
-    userId: new Types.ObjectId().toHexString(),
+    userId: userId.toHexString(),
     timestamp: new Date().toISOString(),
   };
   const qrDataString = JSON.stringify(qrPayload);
 
   await TicketModel.create({
     ticketId,
-    event: eventIdObj,
-    user: new Types.ObjectId(),
-    qrCode: qrDataString, // exact string the route expects
+    event: event._id,
+    user: userId,
+    qrCode: qrDataString,   // EXACT string route expects in { qrData }
     status: 'active',
     price: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
 
-  return { eventId, ticketId, qrDataString };
+  return { event, ticketId, qrDataString };
 };
+
+
 
 describe('POST /api/tickets/validate (expects { qrData: string })', () => {
   it('returns 200 and valid:true when qrData matches stored ticket.qrCode string', async () => {
