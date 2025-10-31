@@ -1,8 +1,3 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 
 import authRoutes from './routes/auth';
@@ -10,11 +5,13 @@ import eventRoutes from './routes/events';
 import ticketRoutes from './routes/tickets';
 import analyticsRoutes from './routes/analytics'; 
 
+import dotenv from 'dotenv';
+import app from './app';
 
 dotenv.config();
 
-const app = express();
 const PORT = process.env.PORT || 5001;
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/campus-events';
 
 // Security middleware
 // app.use(helmet());
@@ -98,5 +95,3 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/campus-ev
     console.error('MongoDB connection error:', error);
     process.exit(1);
   });
-
-export default app;
