@@ -87,10 +87,21 @@ const seed = async () => {
     category: 'social', // use a valid enum for your Event schema
   });
 
-  // Optional: create a user the ticket will reference (helps populate('user'))
-  const userId = new Types.ObjectId();
-  const User = mongoose.model('User');
-  await User.create({ _id: userId, firstName: 'Test', lastName: 'User', email: 't@example.com' });
+// Create a user the ticket will reference (helps populate('user'))
+const userId = new Types.ObjectId();
+const User = mongoose.model('User');
+
+// Use a unique email to avoid unique index collisions in repeated test runs
+await User.create({
+  _id: userId,
+  firstName: 'Test',
+  lastName: 'User',
+  email: `seed_${userId.toHexString()}@example.com`,
+  role: 'student',              // <-- required by your schema
+  password: 'Password123!',     // <-- required; pre-save hook will hash if present
+  // If your schema has other required fields, add safe defaults here, e.g.:
+  // isApproved: true, isVerified: true, status: 'active'
+});
 
   const eventIdObj = (event as mongoose.Document & { _id: Types.ObjectId })._id;
   const eventId = eventIdObj.toHexString();
