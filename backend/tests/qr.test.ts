@@ -1,16 +1,24 @@
+// backend/tests/qr.test.ts
 import request from 'supertest';
 import express from 'express';
 import mongoose, { Types } from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+// Mount ONLY the tickets router
 import ticketsRouter from '../src/routes/tickets';
 import TicketModel from '../src/models/Ticket';
+import EventModel from '../src/models/Event';
 
-// ---- Auth mock --------------------------------------------------------------
+// --- auth mock: always organizer; organization comes from global __TEST_ORG__
 jest.mock('../src/middleware/auth', () => {
   const { Types } = require('mongoose');
   const base = (req: any, _res: any, next: any) => {
-    req.user = { _id: new Types.ObjectId(), roles: ['organizer'] };
+    req.user = {
+      _id: new Types.ObjectId(),
+      roles: ['organizer'],
+      // set in seed(): (global as any).__TEST_ORG__ = <ObjectId>
+      organization: (global as any).__TEST_ORG__,
+    };
     next();
   };
   const authorize = (_role: string) => base;
@@ -19,8 +27,6 @@ jest.mock('../src/middleware/auth', () => {
     default: base,
     authenticate: base,
     authorize,
-    requireOrganizer: base,
-    requireAdmin: base,
     requireApproval: base,
   };
 });
@@ -48,109 +54,106 @@ afterEach(async () => {
   for (const c of cols) await c.deleteMany({});
 });
 
-// Tries multiple likely shapes for qrData until the route returns 200
-async function postValidateWithFallback(
-  app: express.Express,
-  ticketId: string,
-  qrCode: string
-) {
-  const candidates = [
-    // JSON-encoded forms (backend parses JSON.parse(qrData))
-    { qrData: JSON.stringify({ ticketId }) },
-    { qrData: JSON.stringify({ qrCode }) },
-    { qrData: JSON.stringify({ ticketId, qrCode }) },
+/**
+ * Seed one published/approved future event in org, plus one active ticket.
+ * IMPORTANT: we store ticket.qrCode as the EXACT JSON string; tests must send
+ * the same string back as { qrData: "<that string>" }.
+ */
+const seed = async () => {
+  const orgId = new Types.ObjectId();
+  (global as any).__TEST_ORG__ = orgId; // used by auth mock
 
-    // raw-string forms (backend expects plain string)
-    { qrData: ticketId },
-    { qrData: qrCode },
+  const event = await EventModel.create({
+    title: 'Test Event',
+    description: '…',
+    date: new Date(Date.now() + 24 * 3600 * 1000), // tomorrow
+    startTime: '10:00',
+    endTime: '12:00',
+    location: 'Hall A',
+    capacity: 100,
+    organization: orgId,
+    status: 'published',
+    isApproved: true,
+    ticketType: 'free',
+    ticketPrice: 0,
+    category: 'general',
+  });
 
-    // scanner-like object forms (backend expects {text: ...})
-    { qrData: { text: ticketId } },
-    { qrData: { text: qrCode } },
-  ];
-
-  let last: request.Response | null = null;
-
-  for (const body of candidates) {
-    const res = await request(app).post('/api/tickets/validate').send(body);
-    if (res.status === 200) return res;
-    last = res;
-  }
-
-  // If none succeeded, throw with the most informative response
-  const msg = `All qrData shapes failed. Last status=${last?.status}, body=${JSON.stringify(
-    last?.body
-  )}`;
-  throw new Error(msg);
-}
-
-describe('POST /api/tickets/validate', () => {
-  const seed = async () => {
-    const ticketId = new Types.ObjectId().toHexString();
-    const qrCode = 'TEST-CODE-123';
-
-    await TicketModel.create({
-      event: new Types.ObjectId(),
-      user: new Types.ObjectId(),
-      ticketId,            // in model
-      qrCode,              // in model
-      status: 'active',
-      price: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    return { ticketId, qrCode };
+  const ticketId = new Types.ObjectId().toHexString();
+  const qrPayload = {
+    ticketId,
+    eventId: event._id.toHexString(),
+    userId: new Types.ObjectId().toHexString(),
+    timestamp: new Date().toISOString(),
   };
+  const qrDataString = JSON.stringify(qrPayload); // <-- this is what the route expects
 
-  it('first scan validates & marks ticket as used', async () => {
-    const { ticketId, qrCode } = await seed();
-
-    const res = await postValidateWithFallback(app, ticketId, qrCode);
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(expect.objectContaining({ valid: expect.any(Boolean) }));
-
-    const updated = await TicketModel.findOne({ ticketId }).lean();
-    expect(updated?.status).toBe('used');
-    expect(updated?.usedAt).toBeTruthy();
+  await TicketModel.create({
+    ticketId,
+    event: event._id,
+    user: new Types.ObjectId(),
+    qrCode: qrDataString, // EXACT string stored in DB
+    status: 'active',
+    price: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
 
-  it('second scan is idempotent (already used)', async () => {
-    const { ticketId, qrCode } = await seed();
+  return { event, ticketId, qrDataString };
+};
 
-    await postValidateWithFallback(app, ticketId, qrCode); // first scan
-    const res2 = await postValidateWithFallback(app, ticketId, qrCode); // second scan
+describe('POST /api/tickets/validate (expects { qrData: string })', () => {
+  it('returns 200 and valid:true when qrData matches stored ticket.qrCode string', async () => {
+    const { qrDataString } = await seed();
 
-    const already =
-      res2.body?.alreadyCheckedIn === true ||
-      res2.body?.valid === false ||
-      /already\s*(checked\s*in|used)/i.test(res2.body?.message ?? '');
+    const res = await request(app)
+      .post('/api/tickets/validate')
+      .send({ qrData: qrDataString }) // <-- send the exact stored string
+      .expect(200);
 
-    expect(already).toBe(true);
-
-    const after = await TicketModel.findOne({ ticketId }).lean();
-    expect(after?.status).toBe('used');
-    expect(after?.usedAt).toBeTruthy();
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        valid: true,
+        ticket: expect.objectContaining({
+          ticketId: expect.any(String),
+          status: 'active',
+        }),
+      })
+    );
   });
 
-  it('invalid code is rejected', async () => {
-    // Use values that are *valid format* but not present
-    const nonexistentId = new Types.ObjectId().toHexString();
-    const nonexistentCode = 'NOPE-' + new Types.ObjectId().toHexString().slice(0, 8);
+  it('returns 404 (or 400) for a non-existing/invalid code', async () => {
+    await seed();
 
-    let res: request.Response | null = null;
-    try {
-      res = await postValidateWithFallback(app, nonexistentId, nonexistentCode);
-    } catch (e) {
-      // If all shapes failed with 4xx, that’s acceptable too
-    }
+    // same shape (string) but different content -> not found (or 400)
+    const bad = await request(app)
+      .post('/api/tickets/validate')
+      .send({
+        qrData: JSON.stringify({
+          ticketId: 'does-not-exist',
+          eventId: new Types.ObjectId().toHexString(),
+          userId: new Types.ObjectId().toHexString(),
+          timestamp: new Date().toISOString(),
+        }),
+      });
 
-    // Accept either a 4xx (route rejects) or a 200 with valid:false
-    if (res) {
-      expect([200, 400, 404]).toContain(res.status);
-      if (res.status === 200) {
-        expect(res.body).toEqual(expect.objectContaining({ valid: false }));
-      }
-    }
+    expect([404, 400]).toContain(bad.status);
+  });
+
+  it('is repeatable: validate twice still returns 200 (this route does not mark used)', async () => {
+    const { qrDataString } = await seed();
+
+    await request(app)
+      .post('/api/tickets/validate')
+      .send({ qrData: qrDataString })
+      .expect(200);
+
+    // still 200 because marking "used" happens at POST /:id/use, not here
+    const res2 = await request(app)
+      .post('/api/tickets/validate')
+      .send({ qrData: qrDataString })
+      .expect(200);
+
+    expect(res2.body.valid).toBe(true);
   });
 });
