@@ -99,6 +99,7 @@ await User.create({
   email: `seed_${userId.toHexString()}@example.com`,
   role: 'student',              // <-- required by your schema
   password: 'Password123!',     // <-- required; pre-save hook will hash if present
+  studentId: `S${userId.toHexString().slice(-7)}`,
   // If your schema has other required fields, add safe defaults here, e.g.:
   // isApproved: true, isVerified: true, status: 'active'
 });
