@@ -5,6 +5,9 @@ import helmet from 'helmet';
 import authRoutes from './routes/auth';
 import eventRoutes from './routes/events';
 import ticketRoutes from './routes/tickets';
+import analyticsRoutes from './routes/analytics';
+import userRoutes from './routes/users';
+import qrRoutes from './routes/qr';
 
 const app = express();
 
@@ -36,6 +39,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/qr', qrRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
