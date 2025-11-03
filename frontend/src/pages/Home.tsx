@@ -41,8 +41,10 @@ const Home: React.FC = () => {
           axios.get('/admin/dashboard').catch(() => ({ data: { stats: { totalEvents: 0, totalUsers: 0, totalTickets: 0 } } }))
         ]);
 
+
         setFeaturedEvents(eventsResponse.data.events);
         setStats(statsResponse.data.stats);
+        console.log(statsResponse)
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
