@@ -94,3 +94,5 @@ There are 3 types of users: **Students**, **Organizers**, and **Administrators.*
 >>>>>>> Stashed changes
 
 </ul>
+
+<!-- Trigger CI/CD tests -->
