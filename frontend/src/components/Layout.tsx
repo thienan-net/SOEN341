@@ -67,7 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       baseItems.push(
         { name: 'Admin Dashboard', href: '/admin/dashboard', icon: BarChart3 },
         { name: 'Users', href: '/admin/users', icon: Users },
-        { name: 'Events', href: '/admin/events', icon: Calendar },
+        { name: 'Events Moderation', href: '/admin/events', icon: Calendar },
         { name: 'Organizations', href: '/admin/organizations', icon: Settings }
       );
     }
