@@ -1,5 +1,5 @@
 import express from 'express';
-import { body, validationResult, query } from 'express-validator';
+import { body, validationResult, query, param } from 'express-validator';
 import User from '../models/User';
 import Event from '../models/Event';
 import Organization from '../models/Organization';
@@ -247,6 +247,75 @@ router.put('/users/:id/role', authenticate, authorize('admin'), [
   }
 });
 
+// ===== Organizer review =====
+
+// GET /api/admin/organizers/pending
+router.get('/organizers/pending',
+  authenticate, authorize('admin'),
+  async (_req: AuthRequest, res: express.Response) => {
+    try {
+      const pending = await User.find({ role: 'organizer', organizerStatus: 'pending' })
+        .select('firstName lastName email organizerStatus organizerNotes createdAt');
+      res.json({ items: pending });
+    } catch {
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
+
+// POST /api/admin/organizers/:userId/approve
+router.post('/organizers/:userId/approve',
+  authenticate, authorize('admin'),
+  [ param('userId').isMongoId(), body('notes').optional().isString().isLength({ max: 2000 }) ],
+  async (req: AuthRequest, res: express.Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { userId } = req.params;
+    const { notes } = req.body;
+
+    try {
+      const user = await User.findById(userId);
+      if (!user || user.role !== 'organizer') return res.status(404).json({ message: 'Organizer not found' });
+
+      user.organizerStatus = 'approved';
+      if (notes) user.organizerNotes = notes;
+      await user.save();
+
+      res.json({ message: 'Organizer approved', userId: user._id });
+    } catch {
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
+
+// POST /api/admin/organizers/:userId/reject
+router.post('/organizers/:userId/reject',
+  authenticate, authorize('admin'),
+  [ param('userId').isMongoId(), body('reason').isString().isLength({ min: 1, max: 2000 }) ],
+  async (req: AuthRequest, res: express.Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    try {
+      const user = await User.findById(userId);
+      if (!user || user.role !== 'organizer') return res.status(404).json({ message: 'Organizer not found' });
+
+      user.organizerStatus = 'rejected';
+      user.organizerNotes = reason;
+      await user.save();
+
+      res.json({ message: 'Organizer rejected', userId: user._id });
+    } catch {
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
+
+
 // @route   GET /api/admin/events
 // @desc    Get all events for moderation
 // @access  Private (Admin)
@@ -462,6 +531,59 @@ router.get('/events/:id/attendees', authenticate, authorize('admin'), [
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// ===== Event policy approval =====
+
+// POST /api/admin/events/:eventId/approve
+router.post('/events/:eventId/approve',
+  authenticate, authorize('admin'),
+  [ param('eventId').isMongoId(), body('notes').optional().isString().isLength({ max: 2000 }) ],
+  async (req: AuthRequest, res: express.Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { eventId } = req.params;
+    const { notes } = req.body;
+
+    try {
+      const event = await Event.findByIdAndUpdate(
+        eventId,
+        { $set: { isApproved: true, policyNotes: notes ?? undefined } },
+        { new: true }
+      );
+      if (!event) return res.status(404).json({ message: 'Event not found' });
+      res.json({ message: 'Event approved', event });
+    } catch {
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
+
+// POST /api/admin/events/:eventId/reject
+router.post('/events/:eventId/reject',
+  authenticate, authorize('admin'),
+  [ param('eventId').isMongoId(), body('reason').isString().isLength({ min: 1, max: 2000 }) ],
+  async (req: AuthRequest, res: express.Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const { eventId } = req.params;
+    const { reason } = req.body;
+
+    try {
+      const event = await Event.findByIdAndUpdate(
+        eventId,
+        { $set: { isApproved: false, status: 'draft', policyNotes: reason } },
+        { new: true }
+      );
+      if (!event) return res.status(404).json({ message: 'Event not found' });
+      res.json({ message: 'Event rejected', event });
+    } catch {
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
+
 
 // @route   GET /api/admin/organizations
 // @desc    Get all organizations
