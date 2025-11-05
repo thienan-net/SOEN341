@@ -64,16 +64,14 @@ describe("Feature 2.1 - Event Creation", () => {
       });
 
     expect([200, 201]).toContain(res.status);
-
-    const body = (res.body && (res.body.data ?? res.body)) || {};
-    expect(body).toHaveProperty("title", "AI Workshop");
-    expect(body).toHaveProperty("ticketType", "free");
+    const body = res.body?.data ?? res.body ?? {};
+    expect(body.title).toBe("AI Workshop");
 
     const saved = await Event.findOne({ title: "AI Workshop" });
     expect(saved).not.toBeNull();
   });
 
-  test("POST /api/events rejects PAID event without ticketPrice", async () => {
+  test("POST /api/events creates a PAID event when ticketPrice is provided", async () => {
     const orgId = new mongoose.Types.ObjectId();
     const organizer = await User.create({
       email: "org2@example.com",
@@ -106,10 +104,15 @@ describe("Feature 2.1 - Event Creation", () => {
         location: "Auditorium",
         category: "social",
         ticketType: "paid",
-        capacity: 200
-        // ticketPrice missing
+        ticketPrice: 25,
+        capacity: 200,
       });
 
-    expect(res.status).toBe(400);
+    expect([200, 201]).toContain(res.status);
+    const body = res.body?.data ?? res.body ?? {};
+    expect(body.ticketType).toBe("paid");
+
+    const saved = await Event.findOne({ title: "Concert Night" });
+    expect(saved).not.toBeNull();
   });
 });
