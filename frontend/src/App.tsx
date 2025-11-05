@@ -20,6 +20,10 @@ import OrganizerDashboard from './pages/OrganizerDashboard';
 import CreateEvent from './pages/CreateEvent';
 // import EditEvent from './pages/EditEvent';
 import EventAnalytics from './pages/EventAnalytics';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminEvents from './pages/AdminEvents';
+import AdminOrganizations from './pages/AdminOrganizations';
 
 
 function App() {
@@ -84,7 +88,38 @@ function App() {
                 } 
               />
 
-              
+              <Route 
+                path="/admin/dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/users" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/events" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminEvents />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/organizations" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminOrganizations />
+                  </ProtectedRoute>
+                } 
+              />
 
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/" replace />} />

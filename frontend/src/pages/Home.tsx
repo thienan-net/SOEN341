@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Users, Ticket, TrendingUp, ArrowRight } from 'lucide-react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Event {
   _id: string;
@@ -31,6 +32,7 @@ const Home: React.FC = () => {
     totalUsers: 0,
     totalTickets: 0
   });
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,8 +43,10 @@ const Home: React.FC = () => {
           axios.get('/admin/dashboard').catch(() => ({ data: { stats: { totalEvents: 0, totalUsers: 0, totalTickets: 0 } } }))
         ]);
 
+
         setFeaturedEvents(eventsResponse.data.events);
         setStats(statsResponse.data.stats);
+        console.log(statsResponse)
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -109,7 +113,9 @@ const Home: React.FC = () => {
       </div>
 
       {/* Stats Section */}
-      <div className="bg-white py-12">
+      {
+        user && user.role == 'admin' ?
+        <div className="bg-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
@@ -136,6 +142,8 @@ const Home: React.FC = () => {
           </div>
         </div>
       </div>
+      : null
+      }
 
       {/* Featured Events */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
