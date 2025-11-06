@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface ISavedEvent extends Document {
   user: mongoose.Types.ObjectId;
   event: mongoose.Types.ObjectId;
-  savedAt: Date;
+  createdAt: Date;
 }
 
 const SavedEventSchema = new Schema<ISavedEvent>({
@@ -16,16 +16,12 @@ const SavedEventSchema = new Schema<ISavedEvent>({
     type: Schema.Types.ObjectId,
     ref: 'Event',
     required: true
-  },
-  savedAt: {
-    type: Date,
-    default: Date.now
   }
 }, {
-  timestamps: true
+  timestamps: { createdAt: true, updatedAt: false }
 });
 
-// Compound index to prevent duplicate saves
+// Ensure unique combination of user and event
 SavedEventSchema.index({ user: 1, event: 1 }, { unique: true });
 
 export default mongoose.model<ISavedEvent>('SavedEvent', SavedEventSchema);

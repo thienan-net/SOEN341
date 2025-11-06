@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
+import * as express from 'express';
 
 export interface AuthRequest extends Request {
   user?: IUser;
@@ -42,22 +43,19 @@ export const authorize = (...roles: string[]) => {
   };
 };
 
-export const requireApproval = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Authentication required' });
+export const requireApproval = async (
+  req: AuthRequest,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+    if (req.user.role !== 'organizer') return res.status(403).json({ message: 'Organizer role required' });
+    if (req.user.organizerStatus !== 'approved') {
+      return res.status(403).json({ message: 'Organizer account not approved' });
+    }
+    next();
+  } catch {
+    return res.status(500).json({ message: 'Server error' });
   }
-
-  console.log('requireApproval check:', {
-    userId: req.user._id,
-    role: req.user.role,
-    isApproved: req.user.isApproved
-  });
-
-  if (!req.user.isApproved) {
-    console.log('User not approved, returning 403');
-    return res.status(403).json({ message: 'Account pending approval' });
-  }
-
-  console.log('User approved, proceeding...');
-  next();
 };
