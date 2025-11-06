@@ -59,7 +59,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       baseItems.push(
         { name: 'Dashboard', href: '/organizer/dashboard', icon: BarChart3 },
         { name: 'Create Event', href: '/organizer/events/create', icon: Calendar },
-        { name: 'QR Validator', href: '/organizer/qr-validator', icon: QrCode }
+        // { name: 'QR Validator', href: '/organizer/qr-validator', icon: QrCode }
+        //  no need, organizer will use their camera to scan a QR code
       );
     }
 

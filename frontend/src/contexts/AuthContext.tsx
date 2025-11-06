@@ -1,7 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
-
-interface User {
+export const DefaultUser: User = {
+  id: "",
+  email: "",
+  firstName: "",
+  lastName: "",
+  role: "student",
+  isApproved: false,
+  organization: {
+    id: "",
+    name: "",
+    logo: ""
+  },
+  studentId: "",
+  phoneNumber: "",
+  profilePicture: ""
+};
+export interface User {
   id: string;
   email: string;
   firstName: string;

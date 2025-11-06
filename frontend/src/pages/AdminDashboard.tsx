@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Ticket, TrendingUp, Plus, BarChart3, User2, DollarSign } from 'lucide-react';
+import { Calendar, Ticket, TrendingUp, User2, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Bar, Line, Pie } from 'react-chartjs-2';
-import { QRCodeCanvas } from 'qrcode.react';
+import { QRCode } from '../ui/QRCode';
 
 interface DashboardStats {
   totalUsers: number;
@@ -214,7 +214,7 @@ const AdminDashboard: React.FC = () => {
           className="btn-primary flex items-center"
         >
           <TrendingUp className="w-4 h-4 mr-2" />
-          View Pending Events
+          View Pending Events 
         </Link>
       </div>
 
@@ -370,20 +370,16 @@ const AdminDashboard: React.FC = () => {
             {mostPopular.recentTickets.map((ticket) => (
               <div key={ticket.ticketId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{ticket.event.title}</h3>
+                  <h3 className="font-medium text-gray-900">{ticket.event.title} {ticket.ticketId}</h3>
                   <p className="text-sm text-gray-600">
                     {new Date(ticket.createdAt).toLocaleDateString()} • Ticket price: ${ticket.price}
                   </p>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <QRCodeCanvas
-                      value={"localhost:3000/ticket/validate/" + ticket.ticketId}
-                      size={40} // size in pixels
-                      bgColor="#ffffff"
-                      fgColor="#000000"
-                      level="H" // error correction level (L, M, Q, H)
-                      includeMargin={true}
-                    />
+                  <QRCode 
+                    size={40}
+                    ticketID={ticket.ticketId}
+                  />
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     ticket.status === 'active' 
                       ? 'bg-green-100 text-green-800'
