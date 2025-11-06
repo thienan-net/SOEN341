@@ -35,7 +35,7 @@ describe("Feature 2.1 - Event Creation", () => {
       firstName: "John",
       lastName: "Doe",
       role: "organizer",
-      isApproved: true,
+      isApproved: false,
       organization: orgId,
     });
     await Organization.create({
