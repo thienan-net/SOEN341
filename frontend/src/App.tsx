@@ -26,6 +26,8 @@ import AdminEvents from './pages/AdminEvents';
 import AdminOrganizations from './pages/AdminOrganizations';
 import QRValidator from './pages/QRValidator';
 import NotAuthorized from './pages/NotAuthorized';
+import OrganizerEvents from './pages/OrganizerEvents';
+import EditEventPage from './pages/EditEvent';
 
 
 function App() {
@@ -77,6 +79,22 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['organizer']}>
                     <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/events" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerEvents />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/events/edit/:id" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <EditEventPage />
                   </ProtectedRoute>
                 } 
               />
