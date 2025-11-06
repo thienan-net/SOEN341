@@ -7,6 +7,26 @@ import { authenticate, AuthRequest, authorize, requireApproval } from '../middle
 
 const router = express.Router();
 
+// @route   GET /api/users/:id
+// @desc    Get user by ID
+// @access  Public
+router.get('/:id', authenticate, async (req: AuthRequest, res: express.Response) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select('-password')
+      .populate('organization', 'name logo');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Get user by ID error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   GET /api/users/profile
 // @desc    Get user profile
 // @access  Private

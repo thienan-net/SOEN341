@@ -1,8 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, Calendar, MapPin, Clock, Download, QrCode } from 'lucide-react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
+import { QRCode } from '../ui/QRCode';
+import { formatDate, formatTime } from '../helper/date';
 
-interface TicketData {
+export const DefaultTIcket: TicketData = {
+  _id: "",
+  ticketId: "",
+  event: {
+    _id: "",
+    title: "",
+    date: "", // convert MongoDB timestamp to JS Date
+    startTime: "",
+    endTime: "",
+    location: "",
+    organization: {
+      name: "", // You'll need to fetch organization name separately if not included
+      logo: ""  // Same for logo
+    }
+  },
+  user: {
+    _id: "",
+    email: "",
+    firstName: "",
+    lastName: ""
+  },
+  qrCodeImage: "",
+  status: "active",
+  price: 0,
+  createdAt: ""
+};
+export interface TicketData {
   _id: string;
   ticketId: string;
   event: {
@@ -17,6 +46,12 @@ interface TicketData {
       logo?: string;
     };
   };
+  user: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    _id: string;
+  };
   status: 'active' | 'used' | 'cancelled' | 'expired';
   price: number;
   createdAt: string;
@@ -26,7 +61,7 @@ interface TicketData {
 const MyTickets: React.FC = () => {
   const [tickets, setTickets] = useState<TicketData[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const { user } = useAuth();
   useEffect(() => {
     fetchTickets();
   }, []);
@@ -42,22 +77,6 @@ const MyTickets: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const formatTime = (timeString: string) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
@@ -90,7 +109,6 @@ const MyTickets: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-4">My Tickets</h1>
         <p className="text-gray-600">Manage your event tickets and QR codes</p>
       </div>
-
       {tickets.length === 0 ? (
         <div className="text-center py-12">
           <Ticket className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -100,7 +118,7 @@ const MyTickets: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tickets.map((ticket) => (
-            <div key={ticket._id} className="card">
+            <div id={ticket.ticketId} key={ticket._id} className="card">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
@@ -137,11 +155,14 @@ const MyTickets: React.FC = () => {
 
                 <div className="pt-4 border-t border-gray-200">
                   <div className="text-center">
-                    <img
+                    <QRCode 
+                      ticketID={ticket.ticketId}
+                    />
+                    {/* <img
                       src={ticket.qrCodeImage}
                       alt="QR Code"
                       className="w-24 h-24 mx-auto mb-2"
-                    />
+                    /> */}
                     <p className="text-xs text-gray-500 mb-3">
                       Ticket ID: {ticket.ticketId}
                     </p>

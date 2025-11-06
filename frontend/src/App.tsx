@@ -24,6 +24,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminEvents from './pages/AdminEvents';
 import AdminOrganizations from './pages/AdminOrganizations';
+import QRValidator from './pages/QRValidator';
+import NotAuthorized from './pages/NotAuthorized';
 
 
 function App() {
@@ -60,7 +62,15 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              
+              {/* QR Code Route for Admin & Organizer */}
+              <Route 
+                path='/validate-qrcode/:ticketId'
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'organizer']}>
+                    <QRValidator />
+                  </ProtectedRoute>
+                }
+              />
               {/* Protected routes - Organizers */}
               <Route 
                 path="/organizer/dashboard" 
@@ -120,7 +130,10 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-
+              <Route 
+                path="/not-authorized"
+                element={<NotAuthorized />}
+              />
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
