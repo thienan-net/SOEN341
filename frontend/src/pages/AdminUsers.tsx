@@ -19,10 +19,7 @@ interface User {
   createdAt: string;
 }
 
-interface Organization {
-  _id: string;
-  name: string;
-}
+
 
 interface PaginationInfo {
   currentPage: number;
@@ -34,7 +31,6 @@ interface PaginationInfo {
 
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -58,7 +54,6 @@ const AdminUsers: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
-    fetchOrganizations();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, pagination.currentPage]);
 
@@ -85,14 +80,7 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const fetchOrganizations = async () => {
-    try {
-      const response = await axios.get('/admin/organizations');
-      setOrganizations(response.data.organizations);
-    } catch (error) {
-      console.error('Error fetching organizations:', error);
-    }
-  };
+
 
   const handleApproval = async (userId: string, isApproved: boolean) => {
     try {
@@ -105,11 +93,11 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const handleRoleUpdate = async (userId: string, role: string, organizationId?: string) => {
+  const handleRoleUpdate = async (userId: string, role: string, organizationName?: string) => {
     try {
       const data: any = { role };
-      if (role === 'organizer' && organizationId) {
-        data.organizationId = organizationId;
+      if (role === 'organizer' && organizationName) {
+        data.organizationName = organizationName;
       }
 
       await axios.put(`/admin/users/${userId}/role`, data);
@@ -376,7 +364,6 @@ const AdminUsers: React.FC = () => {
       {showEditModal && selectedUser && (
         <EditUserModal
           user={selectedUser}
-          organizations={organizations}
           onSave={handleRoleUpdate}
           onClose={() => {
             setShowEditModal(false);
@@ -403,18 +390,17 @@ const AdminUsers: React.FC = () => {
 // Edit User Modal Component
 interface EditUserModalProps {
   user: User;
-  organizations: Organization[];
-  onSave: (userId: string, role: string, organizationId?: string) => void;
+  onSave: (userId: string, role: string, organizationName?: string) => void;
   onClose: () => void;
 }
 
-const EditUserModal: React.FC<EditUserModalProps> = ({ user, organizations, onSave, onClose }) => {
+const EditUserModal: React.FC<EditUserModalProps> = ({ user, onSave, onClose }) => {
   const [role, setRole] = useState<'student' | 'organizer' | 'admin'>(user.role);
-  const [organizationId, setOrganizationId] = useState(user.organization?._id || '');
+  const [organizationName, setOrganizationName] = useState(user.organization?.name || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(user._id, role, organizationId);
+    onSave(user._id, role, organizationName);
   };
 
   return (
@@ -447,21 +433,16 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, organizations, onSa
             {role === 'organizer' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Organization
+                  Organization Name
                 </label>
-                <select
-                  value={organizationId}
-                  onChange={(e) => setOrganizationId(e.target.value)}
+                <input
+                  type="text"
+                  value={organizationName}
+                  onChange={(e) => setOrganizationName(e.target.value)}
                   className="input-field"
+                  placeholder="Enter organization name"
                   required
-                >
-                  <option value="">Select Organization</option>
-                  {organizations.map((org) => (
-                    <option key={org._id} value={org._id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             )}
           </div>

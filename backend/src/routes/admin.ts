@@ -210,7 +210,7 @@ router.delete('/users/:id', authenticate, authorize('admin'), async (req: AuthRe
 // @access  Private (Admin)
 router.put('/users/:id/role', authenticate, authorize('admin'), [
   body('role').isIn(['student', 'organizer', 'admin']),
-  body('organizationId').optional().isMongoId()
+  body('organizationName').optional().isString().trim().notEmpty()
 ], async (req: AuthRequest, res: express.Response) => {
   try {
     const errors = validationResult(req);
@@ -218,11 +218,26 @@ router.put('/users/:id/role', authenticate, authorize('admin'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { role, organizationId } = req.body;
+    const { role, organizationName } = req.body;
     const updateData: any = { role };
 
-    if (role === 'organizer' && organizationId) {
-      updateData.organization = organizationId;
+    if (role === 'organizer' && organizationName) {
+      // Find existing organization or create a new one
+      let organization = await Organization.findOne({ name: { $regex: new RegExp(`^${organizationName}$`, 'i') } });
+      
+      if (!organization) {
+        // Create new organization
+        organization = new Organization({
+          name: organizationName,
+          description: `Organization: ${organizationName}`,
+          contactEmail: `contact@${organizationName.toLowerCase().replace(/\s+/g, '')}.org`,
+          createdBy: req.user!._id,
+          isActive: true
+        });
+        await organization.save();
+      }
+      
+      updateData.organization = organization._id;
     } else if (role === 'student') {
       updateData.organization = undefined;
     }
