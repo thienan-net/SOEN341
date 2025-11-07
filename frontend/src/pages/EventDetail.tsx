@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Clock, Users, Ticket, Bookmark, Share2, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Ticket, Bookmark, Share2, ArrowLeft, ImageIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import axios from 'axios';
@@ -200,13 +200,20 @@ const EventDetail: React.FC = () => {
 
       {/* Event Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {event.imageUrl && (
-          <img
-            src={event.imageUrl}
-            alt={event.title}
-            className="w-full h-64 object-cover"
-          />
-        )}
+        <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+          {event.imageUrl ? (
+            <img
+              src={event.imageUrl}
+              alt={event.title}
+              className="max-w-full max-h-full object-contain"
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-gray-400">
+              <ImageIcon className="w-8 h-8 mb-2" />
+              <span className="text-sm">No image available</span>
+            </div>
+          )}
+        </div>
         <div className="p-8">
           <div className="flex items-start justify-between mb-6">
             <div className="flex-1">

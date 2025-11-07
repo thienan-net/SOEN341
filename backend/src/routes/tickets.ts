@@ -174,10 +174,13 @@ router.get('/ticket-details/:id', authenticate, requireApproval, async (req: Aut
       if (userRole === 'student' && !isOwner) {
         return res.status(403).json({ message: 'Access denied' });
       }
-    // Check if ticket belongs to organizer's organization
-      if ((ticket.event as any).organization._id.toString() !== req.user!.organization!.toString()) {
-        return res.status(403).json({ message: 'Access denied' });
+      // Check if ticket belongs to organizer's organization
+      if (
+        (ticket.event as any).organization._id.toString() !== req.user!.organization!.toString()
+      ) {
+        return res.status(403).json({ message: "Access denied" });
       }
+
       // Generate QR code if available
       let qrCodeImage = null;
       if (ticket.qrCode) {

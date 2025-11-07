@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, Users, Ticket, TrendingUp, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { EventCard } from '../ui/EventCard';
 
 interface Event {
   _id: string;
@@ -101,12 +102,15 @@ const Home: React.FC = () => {
               >
                 Browse Events
               </Link>
-              <Link
-                to="/register"
-                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary-600 transition-colors"
-              >
-                Get Started
-              </Link>
+              {
+                !user && 
+                <Link
+                  to="/register"
+                  className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary-600 transition-colors"
+                >
+                  Get Started
+                </Link>
+              }
             </div>
           </div>
         </div>
@@ -161,75 +165,7 @@ const Home: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredEvents.map((event) => (
-              <div key={event._id} className="card hover:shadow-lg transition-shadow">
-                {event.imageUrl && (
-                  <img
-                    src={event.imageUrl}
-                    alt={event.title}
-                    className="w-full h-48 object-cover rounded-lg mb-4"
-                  />
-                )}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                      {event.category}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {event.ticketType === 'free' ? 'Free' : `$${event.ticketPrice}`}
-                    </span>
-                  </div>
-                  
-                  <h3 className="text-xl font-semibold text-gray-900 line-clamp-2">
-                    {event.title}
-                  </h3>
-                  
-                  <p className="text-gray-600 line-clamp-3">
-                    {event.description}
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      {formatDate(event.date)}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <span className="w-4 h-4 mr-2">🕐</span>
-                      {formatTime(event.startTime)} - {formatTime(event.endTime)}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <span className="w-4 h-4 mr-2">📍</span>
-                      {event.location}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Users className="w-4 h-4 mr-2" />
-                      {event.organization.name}
-                    </div>
-                  </div>
-                  
-                  <div className="pt-4">
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                      <span>{event.ticketsIssued} tickets issued</span>
-                      <span>{event.remainingCapacity} remaining</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-primary-600 h-2 rounded-full"
-                        style={{
-                          width: `${(event.ticketsIssued / event.capacity) * 100}%`
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <Link
-                    to={`/events/${event._id}`}
-                    className="w-full btn-primary flex items-center justify-center"
-                  >
-                    View Details
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
-                </div>
-              </div>
+              <EventCard event={event}/>
             ))}
           </div>
         )}

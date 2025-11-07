@@ -171,7 +171,7 @@ const AdminOrganizations: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div style={{paddingLeft: 10, paddingRight: 10}} className="flex items-center justify-between flex-wrap gap-[10px]">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Organization Management</h1>
           <p className="text-gray-600">Manage campus organizations</p>
@@ -191,21 +191,27 @@ const AdminOrganizations: React.FC = () => {
           <form onSubmit={handleSearch} className="flex-1">
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <Search className="w-5 h-5 text-gray-400" />
+                </div>
                 <input
                   type="text"
                   placeholder="Search organizations..."
-                  className="input pl-10 w-full"
+                  className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-3 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <button type="submit" className="btn-primary">Search</button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
+              >
+                Search
+              </button>
             </div>
           </form>
-          
           <select
-            className="input w-auto"
+            className="w-auto border border-gray-300 rounded-md py-2 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
           >
@@ -213,6 +219,7 @@ const AdminOrganizations: React.FC = () => {
             <option value="active">Active Only</option>
             <option value="inactive">Inactive Only</option>
           </select>
+
         </div>
       </div>
 
@@ -310,12 +317,12 @@ const AdminOrganizations: React.FC = () => {
                         )}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        {new Date(organization.createdAt).toLocaleDateString()}
+                    <td className="px-6 py-4 text-sm text-gray-500 min-w-[200px] max-w-[200px] truncate">
+                      <div className="flex items-center whitespace-nowrap overflow-hidden text-ellipsis">
+                        <Calendar className="w-4 h-4 mr-1 flex-shrink-0" />
+                        <span className="truncate">{new Date(organization.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">
+                      <div className="text-xs text-gray-400 mt-1 truncate whitespace-nowrap overflow-hidden text-ellipsis">
                         by {organization.createdBy.firstName} {organization.createdBy.lastName}
                       </div>
                     </td>
