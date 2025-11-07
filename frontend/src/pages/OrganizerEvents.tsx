@@ -4,6 +4,8 @@ import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight, LogIn, Arro
 import axios from 'axios';
 import { formatDate, formatTime } from '../helper/date';
 import { toast } from 'react-toastify';
+import { saveToCalendar } from '../helper/calendar';
+import SaveToCalendarButton from '../ui/SaveToCalendarButton';
 
 interface Event {
     _id: string;
@@ -212,15 +214,7 @@ const OrganizerEvents: React.FC = () => {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center justify-between">
-                                <Link
-                                    to={`/events/${event._id}`}
-                                    className="text-sm font-medium text-primary-600 hover:underline flex items-center"
-                                >
-                                    View Details
-                                    <ArrowRight className="w-4 h-4 ml-1" />
-                                </Link>
-
+                            <div className="flex flex-wrap items-center justify-between gap-[10px]">
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => exportAttendeesToCSV(event._id)}
@@ -228,7 +222,7 @@ const OrganizerEvents: React.FC = () => {
                                     >
                                         Export CSV
                                     </button>
-
+                                    <SaveToCalendarButton slimStyle event={event}/>
                                     <Link
                                         to={`/organizer/events/edit/${event._id}`}
                                         className="text-xs px-3 py-1.5 border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50"
@@ -244,6 +238,13 @@ const OrganizerEvents: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
+                            <Link
+                                to={`/events/${event._id}`}
+                                className="ml-1 mt-3 text-sm font-medium text-primary-600 hover:underline flex items-center"
+                            >
+                                View Details
+                                <ArrowRight className="w-4 h-4 ml-1" />
+                            </Link>
                         </div>
 
                     ))}
