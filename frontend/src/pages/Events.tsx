@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight, LogIn, ArrowUp } from 'lucide-react';
 import axios from 'axios';
+import { formatDate, formatTime } from '../helper/date';
 
-interface Event {
+export interface Event {
   _id: string;
   title: string;
   description: string;
@@ -99,23 +100,6 @@ const Events: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setPagination(prev => ({ ...prev, currentPage: page }));
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const formatTime = (timeString: string) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
   };
 
   const getCategoryColor = (category: string) => {

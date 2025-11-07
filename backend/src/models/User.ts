@@ -7,6 +7,8 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   role: 'student' | 'organizer' | 'admin';
+  organizerStatus?: 'pending' | 'approved' | 'rejected';
+  organizerNotes?: string;
   studentId?: string;
   organization?: mongoose.Types.ObjectId;
   isApproved: boolean;
@@ -45,6 +47,15 @@ const UserSchema = new Schema<IUser>({
     enum: ['student', 'organizer', 'admin'],
     required: true
   },
+  organizerStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  organizerNotes: {
+    type: String,
+    maxlength: 2000
+  },
   studentId: {
     type: String,
     required: function(this: IUser) {
@@ -73,6 +84,9 @@ const UserSchema = new Schema<IUser>({
 }, {
   timestamps: true
 });
+
+// useful index
+UserSchema.index({ role: 1, organizerStatus: 1 });
 
 // Hash password before saving
 UserSchema.pre('save', async function(next) {

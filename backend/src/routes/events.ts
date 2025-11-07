@@ -6,7 +6,54 @@ import { authenticate, AuthRequest, authorize, requireApproval } from '../middle
 
 
 const router = express.Router();
-
+// @route   GET /api/events/organizer
+// @desc    Get all published and approved events for organization
+// @access  Private
+router.get("/organizer", [
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 100 })
+], authenticate, authorize('organizer'), requireApproval, async (req: AuthRequest, res: express.Response) => {
+  try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+      const { page = 1, limit = 10 } = req.query;
+      const skip = (Number(page) - 1) * Number(limit);
+      const events = await Event.find({organization: req.user?.organization})
+        .populate('organization', 'name logo')
+        .populate('createdBy', 'firstName lastName')
+        .sort({ date: 1 })
+        .skip(skip)
+        .limit(Number(limit));
+      const total = await Event.countDocuments();
+          // Get ticket counts for each event
+      const eventsWithTickets = await Promise.all(
+        events.map(async (event) => {
+          const ticketCount = await Ticket.countDocuments({ event: event._id, status: 'active' });
+          return {
+            ...event.toObject(),
+            ticketsIssued: ticketCount,
+            remainingCapacity: event.capacity - ticketCount
+          };
+        })
+      );
+      res.json({
+        events: eventsWithTickets,
+        pagination: {
+          currentPage: Number(page),
+          totalPages: Math.ceil(total / Number(limit)),
+          totalEvents: total,
+          hasNext: skip + events.length < total,
+          hasPrev: Number(page) > 1
+        }
+      });
+  }
+  catch (error) {
+    console.error('Get events error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+})
 // @route   GET /api/events
 // @desc    Get all published and approved events with filtering
 // @access  Public
@@ -86,6 +133,53 @@ router.get('/', [
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// @route   GET /api/events/attendees/:id
+// @desc    Get full attendee list (name, email, ticket info) for an event
+// @access  Private (Organizer - owner only)
+router.get(
+  '/attendees/:id',
+  authenticate,
+  authorize('organizer'),
+  requireApproval,
+  async (req: AuthRequest, res: express.Response) => {
+    try {
+      const event = await Event.findById(req.params.id);
+      if (!event) {
+        return res.status(404).json({ message: 'Event not found' });
+      }
+
+      // Only event organizer can access attendees
+      if (event.organization.toString() !== (req.user!.organization as any).toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Fetch tickets linked to the event and populate user info
+      const tickets = await Ticket.find({ event: event._id, status: 'active' })
+        .populate({ path: 'user', select: 'firstName lastName email' });
+
+      const attendees = tickets
+        .filter(t => t.user) // skip tickets missing user reference
+        .map(t => ({
+          ticketId: t.ticketId,
+          name: `${(t.user as any).firstName} ${(t.user as any).lastName}`.trim(),
+          email: (t.user as any).email,
+          status: t.status,
+          purchasedAt: t.createdAt,
+        }));
+
+      res.json({
+        eventId: event._id,
+        eventTitle: event.title,
+        totalAttendees: attendees.length,
+        attendees,
+      });
+    } catch (error) {
+      console.error('Get attendees error:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
 
 // @route   GET /api/events/:id
 // @desc    Get single event by ID

@@ -75,6 +75,7 @@ There are 3 types of users: **Students**, **Organizers**, and **Administrators.*
 <li><p>Joshua Bitton&emsp;&emsp;&emsp;&nbsp;&nbsp;ID:40273378&emsp;e-mail: joshtosh13@hotmail.com</p></li>
 <li><p>Kenny Boum-Biha&emsp;&ensp;&nbsp;ID:40214468&emsp;e-mail: kennyboum@gmail.com</p></li>
 <li><p>Thien An Nguyen&emsp;&ensp;&nbsp;&nbsp;ID:40298238&emsp;e-mail:</p></li>
+<li><p>Angelo El Hajj&emsp;&emsp;&ensp;&nbsp;ID:40311122&emsp; elhajj.angelo9@gmail.com:</p></li>
 <li><p>Keaton Nguyen&emsp;&emsp;&ensp;&nbsp;ID:40296747&emsp;e-mail:</p></li>
 </ul>
 
