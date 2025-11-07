@@ -13,7 +13,8 @@ import {
   Users,
   Settings,
   Bookmark,
-  QrCode
+  QrCode,
+  View
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -58,6 +59,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (user.role === 'organizer') {
       baseItems.push(
         { name: 'Dashboard', href: '/organizer/dashboard', icon: BarChart3 },
+        { name: 'Manage Events', href: '/organizer/events', icon: View },
         { name: 'Create Event', href: '/organizer/events/create', icon: Calendar },
         // { name: 'QR Validator', href: '/organizer/qr-validator', icon: QrCode }
         //  no need, organizer will use their camera to scan a QR code
