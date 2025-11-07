@@ -10,14 +10,26 @@ import Event from "../src/models/Event";
 
 let mongoServer: MongoMemoryServer;
 const JWT_SECRET = "test-secret";
+
+// Ensure JWT_SECRET is set before anything else
 process.env.JWT_SECRET = JWT_SECRET;
 
-const makeToken = (userId: string) => jwt.sign({ userId }, JWT_SECRET);
+const makeToken = (userId: string) => {
+  console.log("Making token with JWT_SECRET:", JWT_SECRET);
+  return jwt.sign({ userId }, JWT_SECRET);
+};
 
 beforeAll(async () => {
   jest.setTimeout(30000);
   mongoServer = await MongoMemoryServer.create();
   await mongoose.connect(mongoServer.getUri());
+});
+
+afterEach(async () => {
+  // Clean up database between tests
+  await User.deleteMany({});
+  await Organization.deleteMany({});
+  await Event.deleteMany({});
 });
 
 afterAll(async () => {
@@ -63,6 +75,11 @@ describe("Feature 2.1 - Event Creation", () => {
         capacity: 100,
       });
 
+    if (res.status !== 200 && res.status !== 201) {
+      console.error("Unexpected status:", res.status);
+      console.error("Response body:", res.body);
+      console.error("Organizer created:", organizer.toObject());
+    }
     expect([200, 201]).toContain(res.status);
     const body = res.body?.data ?? res.body ?? {};
     expect(body.title).toBe("AI Workshop");
@@ -108,6 +125,11 @@ describe("Feature 2.1 - Event Creation", () => {
         capacity: 200,
       });
 
+    if (res.status !== 200 && res.status !== 201) {
+      console.error("Unexpected status:", res.status);
+      console.error("Response body:", res.body);
+      console.error("Organizer created:", organizer.toObject());
+    }
     expect([200, 201]).toContain(res.status);
     const body = res.body?.data ?? res.body ?? {};
     expect(body.ticketType).toBe("paid");
