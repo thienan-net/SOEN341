@@ -30,7 +30,8 @@ const Events: React.FC = () => {
   {
     search: '',
     category: '',
-    date: ''
+    startDate: '',
+    endDate: ''
   });
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -70,11 +71,14 @@ const Events: React.FC = () => {
         limit: '12'
       });
 
-      // filter options if present
-      const { search, category, date } = filters;
-      if (search) params.append('search', search);
-      if (category) params.append('category', category);
-      if (date) params.append('date', date);
+  // filter options if present (supports date range)
+  const { search, category, startDate, endDate } = filters;
+  if (search) params.append('search', search);
+  if (category) params.append('category', category);
+  // If both start and end are provided, send range. If only one provided, send that as single-bound filter.
+  // backend expects 'start' and 'end' ISO date query params
+  if (startDate) params.append('start', startDate);
+  if (endDate) params.append('end', endDate);
 
       // fetch events from API
       const response = await axios.get(`/events?${params.toString()}`);
@@ -148,7 +152,8 @@ const Events: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Search Input */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-gray-400" />
@@ -162,6 +167,7 @@ const Events: React.FC = () => {
             />
           </div>
 
+          {/* Category Filter */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Filter className="h-5 w-5 text-gray-400" />
@@ -179,6 +185,7 @@ const Events: React.FC = () => {
             </select>
           </div>
 
+          {/* Start Date */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Calendar className="h-5 w-5 text-gray-400" />
@@ -186,17 +193,34 @@ const Events: React.FC = () => {
             <input
               type="date"
               className="input-field pl-10"
-              value={filters.date}
-              onChange={(e) => handleFilterChange('date', e.target.value)}
+              value={filters.startDate}
+              onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              placeholder="Start date"
+              aria-label="Start date"
             />
           </div>
 
-          <button
-            onClick={() => setFilters({ search: '', category: '', date: '' })}
-            className="btn-secondary"
-          >
-            Clear Filters
-          </button>
+          {/* End Date */}
+          <div className="relative">
+            <input
+              type="date"
+              className="input-field"
+              value={filters.endDate}
+              onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              placeholder="End date"
+              aria-label="End date"
+            />
+          </div>
+
+          {/* Clear Filters Button */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-1">
+            <button
+              onClick={() => setFilters({ search: '', category: '', startDate: '', endDate: '' })}
+              className="btn-secondary w-full"
+            >
+              Clear Filters
+            </button>
+          </div>
         </div>
       </div>
 
