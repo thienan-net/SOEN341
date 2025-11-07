@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight, LogIn, ArrowUp } from 'lucide-react';
 import axios from 'axios';
 import { formatDate, formatTime } from '../helper/date';
+import { saveToCalendar } from '../helper/calendar';
+import SaveToCalendarButton from '../ui/SaveToCalendarButton';
 
 export interface Event {
   _id: string;
@@ -270,6 +272,7 @@ const Events: React.FC = () => {
                   View Details
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
+                <SaveToCalendarButton event={event} />
               </div>
             </div>
           ))}
