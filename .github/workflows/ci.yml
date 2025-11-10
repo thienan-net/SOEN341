@@ -1,0 +1,76 @@
+# -------------------------------
+# GitHub Actions CI Pipeline
+# -------------------------------
+
+# "name" is what shows up in the Actions tab
+name: CI Pipeline
+
+# "on" defines the trigger events for this workflow
+on:
+  push:               # Run this workflow when code is pushed
+    branches: [ main ]  # Only run on the "main" branch
+  pull_request:       # Also run on pull requests targeting main
+    branches: [ main ]
+
+# "jobs" defines what tasks this workflow will run
+jobs:
+  build:               # A job called "build"
+    runs-on: ubuntu-latest   # The virtual machine to use (Linux, latest Ubuntu)
+
+    steps:
+      # Each "step" is one action or command in the job
+
+      # Step 1: Checkout code from GitHub so the runner has access to it
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node environment on the runner
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18              
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      # Backend npm installs
+      - name: Backend | Install
+        working-directory: backend
+        run: npm ci                         #npm ci means npm clean installs
+      
+      # Backend test run
+      - name: Backend | Test
+        working-directory: backend
+        env:
+          NODE_ENV: test
+        run: |
+           if npm run | grep -q " test"; then npx --yes jest --passWithNoTests; else echo "no backend tests"; fi
+
+      # Frontend npm installs
+      - name: Frontend | Install
+        working-directory: frontend
+        run: npm ci
+        
+      # Frontend test run
+      - name: Frontend | Test
+        working-directory: frontend
+        env:
+          CI: "true"
+          NODE_ENV: test
+        run: |
+           if npm run | grep -q " test"; then npx --yes jest --passWithNoTests; else echo "no frontend tests"; fi
+
+        # --maxfail=1 : stop after 1 failure (useful for faster feedback)
+        # --disable-warnings : hide warnings to keep output clean
+        # -q : quiet mode (shorter output)
+
+      # -------------------------------
+      # What else could we add here?
+      # -------------------------------
+      # - Run linting (e.g., flake8, black, pylint) to enforce code style
+      # - Cache dependencies to speed up builds
+      # - Test on multiple Node versions (matrix build)
+      # - Deploy to a server after tests pass
+      # - Build Docker images or publish Python packages

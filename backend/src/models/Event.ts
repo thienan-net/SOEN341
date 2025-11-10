@@ -21,6 +21,9 @@ export interface IEvent extends Document {
   contactInfo?: string;
   createdAt: Date;
   updatedAt: Date;
+  registrations?: number; 
+  policyNotes?: string;
+
 }
 
 const EventSchema = new Schema<IEvent>({
@@ -106,7 +109,16 @@ const EventSchema = new Schema<IEvent>({
   contactInfo: {
     type: String,
     trim: true
-  }
+  },
+  registrations: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+    policyNotes: {
+    type: String,
+    maxlength: 2000
+  },
 }, {
   timestamps: true
 });
@@ -115,6 +127,6 @@ const EventSchema = new Schema<IEvent>({
 EventSchema.index({ date: 1, status: 1 });
 EventSchema.index({ organization: 1 });
 EventSchema.index({ category: 1 });
-EventSchema.index({ isApproved: 1, status: 1 });
+EventSchema.index({ isApproved: 1, status: 1, date: 1 });
 
 export default mongoose.model<IEvent>('Event', EventSchema);

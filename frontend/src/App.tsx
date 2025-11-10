@@ -20,6 +20,14 @@ import OrganizerDashboard from './pages/OrganizerDashboard';
 import CreateEvent from './pages/CreateEvent';
 // import EditEvent from './pages/EditEvent';
 import EventAnalytics from './pages/EventAnalytics';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminEvents from './pages/AdminEvents';
+import AdminOrganizations from './pages/AdminOrganizations';
+import QRValidator from './pages/QRValidator';
+import NotAuthorized from './pages/NotAuthorized';
+import OrganizerEvents from './pages/OrganizerEvents';
+import EditEventPage from './pages/EditEvent';
 
 
 function App() {
@@ -56,13 +64,37 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              
+              {/* QR Code Route for Admin & Organizer */}
+              <Route 
+                path='/validate-qrcode/:ticketId'
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'organizer']}>
+                    <QRValidator />
+                  </ProtectedRoute>
+                }
+              />
               {/* Protected routes - Organizers */}
               <Route 
                 path="/organizer/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={['organizer']}>
                     <OrganizerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/events" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerEvents />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/events/edit/:id" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <EditEventPage />
                   </ProtectedRoute>
                 } 
               />
@@ -74,18 +106,59 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-
-              <Route 
+              {/* this seems to provide global analytics, disabling for now */}
+              {/* <Route 
                 path="/organizer/events/:id/analytics" 
                 element={
                   <ProtectedRoute allowedRoles={['organizer']}>
                     <EventAnalytics />
                   </ProtectedRoute>
                 } 
+              /> */}
+              <Route 
+                path="/organizer/events/analytics" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <EventAnalytics />
+                  </ProtectedRoute>
+                } 
               />
-
-              
-
+              <Route 
+                path="/admin/dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/users" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/events" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminEvents />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/organizations" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminOrganizations />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/not-authorized"
+                element={<NotAuthorized />}
+              />
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

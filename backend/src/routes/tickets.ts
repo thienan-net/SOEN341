@@ -11,7 +11,7 @@ const router = express.Router();
 // @route   POST /api/tickets/claim
 // @desc    Claim a ticket for an event
 // @access  Private (Student)
-router.post('/claim', authenticate, authorize('student'), requireApproval, [
+router.post('/claim', authenticate, authorize('student'), [
   body('eventId').isMongoId(),
   body('paymentMethod').optional().isString() // For future payment integration
 ], async (req: AuthRequest, res: express.Response) => {
@@ -131,9 +131,9 @@ router.get('/my', authenticate, authorize('student'), requireApproval, async (re
           width: 128,
           margin: 1
         });
-
         return {
           ...ticket.toObject(),
+          ticketId: ticket.ticketId,
           qrCodeImage: qrCode
         };
       })
@@ -145,6 +145,56 @@ router.get('/my', authenticate, authorize('student'), requireApproval, async (re
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+
+// @route   GET /api/tickets/ticket-details/:id
+// @desc    Get ticket info (student owner, admin, organizer)
+// @access  Private (student own ticket, admin or organizer can access any ticket)
+router.get('/ticket-details/:id', authenticate, requireApproval, async (req: AuthRequest, res: express.Response) => {
+    try {
+      console.log("ticket id", req.params.id);
+
+      // Fetch ticket by UUID (ticketId)
+      const ticket = await Ticket.findOne({ ticketId: req.params.id })
+        .populate({
+          path: 'event',
+          select: 'title date startTime endTime location imageUrl organization',
+          populate: { path: 'organization', select: 'name logo' },
+        })
+        .populate('user', 'firstName lastName email');
+
+      if (!ticket) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+
+      const userRole = req.user!.role;
+      const isOwner = ticket.user && ticket.user._id.toString() === (req.user!._id as any).toString();
+
+      // Only restrict students who are not the owner
+      if (userRole === 'student' && !isOwner) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      // Check if ticket belongs to organizer's organization
+      if (
+        (ticket.event as any).organization._id.toString() !== req.user!.organization!.toString()
+      ) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Generate QR code if available
+      let qrCodeImage = null;
+      if (ticket.qrCode) {
+        qrCodeImage = await QRCode.toDataURL(ticket.qrCode, { width: 256, margin: 2 });
+      }
+
+      res.json({ ...ticket.toObject(), qrCodeImage });
+    } catch (error) {
+      console.error('Get ticket error:', error);
+      res.status(500).json({ message: 'Server error', error: (error as Error).message });
+    }
+  }
+);
+
 
 // @route   GET /api/tickets/:id
 // @desc    Get single ticket by ID
@@ -262,9 +312,9 @@ router.post('/validate', authenticate, authorize('organizer'), requireApproval, 
 // @route   POST /api/tickets/:id/use
 // @desc    Mark ticket as used
 // @access  Private (Organizer)
-router.post('/:id/use', authenticate, authorize('organizer'), requireApproval, async (req: AuthRequest, res: express.Response) => {
+router.post('/:id/use', authenticate, authorize('organizer', 'admin'), requireApproval, async (req: AuthRequest, res: express.Response) => {
   try {
-    const ticket = await Ticket.findById(req.params.id)
+    const ticket = await Ticket.findOne({ticketId: req.params.id})
       .populate('event', 'organization');
 
     if (!ticket) {
