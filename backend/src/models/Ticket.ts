@@ -13,51 +13,52 @@ export interface ITicket extends Document {
   updatedAt: Date;
 }
 
-const TicketSchema = new Schema<ITicket>({
-  ticketId: {
-    type: String,
-    required: true,
-    unique: true
+const TicketSchema = new Schema<ITicket>(
+  {
+    ticketId: {
+      type: String,
+      required: true,
+      unique: true // ✅ unique already creates an index — no need for .index()
+    },
+    event: {
+      type: Schema.Types.ObjectId,
+      ref: 'Event',
+      required: true
+    },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    qrCode: {
+      type: String,
+      required: true,
+      unique: true // ✅ same here
+    },
+    status: {
+      type: String,
+      enum: ['active', 'used', 'cancelled', 'expired'],
+      default: 'active'
+    },
+    usedAt: {
+      type: Date
+    },
+    usedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    price: {
+      type: Number,
+      min: 0
+    }
   },
-  event: {
-    type: Schema.Types.ObjectId,
-    ref: 'Event',
-    required: true
-  },
-  user: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  qrCode: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  status: {
-    type: String,
-    enum: ['active', 'used', 'cancelled', 'expired'],
-    default: 'active'
-  },
-  usedAt: {
-    type: Date
-  },
-  usedBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  price: {
-    type: Number,
-    min: 0
+  {
+    timestamps: true
   }
-}, {
-  timestamps: true
-});
+);
 
-// Index for efficient querying
-TicketSchema.index({ ticketId: 1 });
-TicketSchema.index({ qrCode: 1 });
-TicketSchema.index({ event: 1, user: 1 });
-TicketSchema.index({ status: 1 });
+// ✅ Keep only necessary additional indexes
+TicketSchema.index({ event: 1, user: 1 }); // compound index still valid
+TicketSchema.index({ status: 1 });         // useful for filtering
 
 export default mongoose.model<ITicket>('Ticket', TicketSchema);

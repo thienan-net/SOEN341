@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight, LogIn, ArrowUp, ImageIcon } from 'lucide-react';
 import axios from 'axios';
+import { formatDate, formatTime } from '../helper/date';
+import { saveToCalendar } from '../helper/calendar';
+import SaveToCalendarButton from '../ui/SaveToCalendarButton';
+import { EventCard } from '../ui/EventCard';
 
-interface Event {
+export interface Event {
   _id: string;
   title: string;
   description: string;
@@ -26,6 +30,7 @@ interface Event {
 const Events: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("")
   const [filters, setFilters] = useState(
   {
     search: '',
@@ -95,7 +100,7 @@ const Events: React.FC = () => {
   };
 
   //handle for filter changes
-  const handleFilterChange = (key: string, value: string) => {
+  const onFilterSubmit = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
@@ -104,35 +109,7 @@ const Events: React.FC = () => {
     setPagination(prev => ({ ...prev, currentPage: page }));
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
 
-  const formatTime = (timeString: string) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      academic: 'bg-blue-100 text-blue-800',
-      social: 'bg-pink-100 text-pink-800',
-      sports: 'bg-green-100 text-green-800',
-      cultural: 'bg-purple-100 text-purple-800',
-      career: 'bg-yellow-100 text-yellow-800',
-      volunteer: 'bg-orange-100 text-orange-800',
-      other: 'bg-gray-100 text-gray-800'
-    };
-    return colors[category] || 'bg-gray-100 text-gray-800';
-  };
 
   if (loading) {
     return (
@@ -162,9 +139,17 @@ const Events: React.FC = () => {
               type="text"
               placeholder="Search events..."
               className="input-field pl-10"
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if(e.key === "Enter" ) {
+                  onFilterSubmit('search', search)
+                }
+              }}
             />
+            <div style={{cursor: "pointer"}} onClick={() => onFilterSubmit('search', search)} className="absolute inset-y-0 right-3 pl-3 flex items-center">
+              <ArrowUp  className="h-5 w-5 text-gray-400" />
+            </div>
           </div>
 
           {/* Category Filter */}
@@ -175,7 +160,7 @@ const Events: React.FC = () => {
             <select
               className="input-field pl-10"
               value={filters.category}
-              onChange={(e) => handleFilterChange('category', e.target.value)}
+              onChange={(e) => onFilterSubmit('category', e.target.value)}
             >
               {categories.map((category) => (
                 <option key={category.value} value={category.value}>
@@ -193,10 +178,8 @@ const Events: React.FC = () => {
             <input
               type="date"
               className="input-field pl-10"
-              value={filters.startDate}
-              onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              placeholder="Start date"
-              aria-label="Start date"
+              value={filters.date}
+              onChange={(e) => onFilterSubmit('date', e.target.value)}
             />
           </div>
 
@@ -234,75 +217,7 @@ const Events: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {events.map((event) => (
-            <div key={event._id} className="card hover:shadow-lg transition-shadow">
-              {event.imageUrl && (
-                <img
-                  src={event.imageUrl}
-                  alt={event.title}
-                  className="w-full h-48 object-cover rounded-lg mb-4"
-                />
-              )}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(event.category)}`}>
-                    {event.category}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {event.ticketType === 'free' ? 'Free' : `$${event.ticketPrice}`}
-                  </span>
-                </div>
-                
-                <h3 className="text-xl font-semibold text-gray-900 line-clamp-2">
-                  {event.title}
-                </h3>
-                
-                <p className="text-gray-600 line-clamp-3">
-                  {event.description}
-                </p>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {formatDate(event.date)}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="w-4 h-4 mr-2" />
-                    {formatTime(event.startTime)} - {formatTime(event.endTime)}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    {event.location}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Users className="w-4 h-4 mr-2" />
-                    {event.organization.name}
-                  </div>
-                </div>
-                
-                <div className="pt-4">
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                    <span>{event.ticketsIssued} tickets issued</span>
-                    <span>{event.remainingCapacity} remaining</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-primary-600 h-2 rounded-full"
-                      style={{
-                        width: `${(event.ticketsIssued / event.capacity) * 100}%`
-                      }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <Link
-                  to={`/events/${event._id}`}
-                  className="w-full btn-primary flex items-center justify-center"
-                >
-                  View Details
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </div>
-            </div>
+              <EventCard event={event}/>
           ))}
         </div>
       )}
