@@ -106,16 +106,23 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-
-              <Route 
+              {/* this seems to provide global analytics, disabling for now */}
+              {/* <Route 
                 path="/organizer/events/:id/analytics" 
                 element={
                   <ProtectedRoute allowedRoles={['organizer']}>
                     <EventAnalytics />
                   </ProtectedRoute>
                 } 
+              /> */}
+              <Route 
+                path="/organizer/events/analytics" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <EventAnalytics />
+                  </ProtectedRoute>
+                } 
               />
-
               <Route 
                 path="/admin/dashboard" 
                 element={

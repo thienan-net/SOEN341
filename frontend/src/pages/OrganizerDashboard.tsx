@@ -164,15 +164,24 @@ const OrganizerDashboard: React.FC = () => {
                   }`}>
                     {event.status}
                   </span>
-                  <Link
+                  {/* Removing this since the page it directs to is a global analytics */}
+                  {/* <Link
                     to={`/organizer/events/${event._id}/analytics`}
                     className="text-primary-600 hover:text-primary-700 text-sm font-medium"
                   >
                     View Analytics
-                  </Link>
+                  </Link> */}
                 </div>
               </div>
             ))}
+            <div className="flex justify-end items-center mb-4">
+              <Link
+                to="/organizer/events/analytics"
+                className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 transition"
+              >
+                View Analytics
+              </Link>
+            </div>
           </div>
         )}
       </div>

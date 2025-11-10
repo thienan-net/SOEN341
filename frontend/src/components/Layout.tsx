@@ -16,6 +16,7 @@ import {
   QrCode,
   View
 } from 'lucide-react';
+import UserDropdown from '../ui/UserDropdown';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -68,9 +69,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     if (user.role === 'admin') {
       baseItems.push(
-        { name: 'Admin Dashboard', href: '/admin/dashboard', icon: BarChart3 },
+        { name: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
         { name: 'Users', href: '/admin/users', icon: Users },
-        { name: 'Events Moderation', href: '/admin/events', icon: Calendar },
+        { name: 'Moderation', href: '/admin/events', icon: Calendar },
         { name: 'Organizations', href: '/admin/organizations', icon: Settings }
       );
     }
@@ -92,7 +93,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   CampusEvents
                 </Link>
               </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              {/* Desktop navigation: hidden below lg */}
+              <div className="hidden lg:ml-6 lg:flex lg:space-x-8">
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -112,42 +114,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 })}
               </div>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:items-center">
-              {user ? (
-                <div className="ml-3 relative">
-                  <div className="flex items-center space-x-4">
-                    <span className="text-sm text-gray-700">
-                      {user.firstName} {user.lastName}
-                    </span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                      {user.role}
-                    </span>
-                    <button
-                      onClick={handleLogout}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <LogOut className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <Link
-                    to="/login"
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="btn-primary"
-                  >
-                    Register
-                  </Link>
-                </div>
-              )}
-            </div>
-            <div className="sm:hidden flex items-center">
+
+            {/* User dropdown: hidden below lg */}
+            <UserDropdown 
+                className="hidden lg:flex"
+                userValid={user ? true : false}
+                role={user?.role ?? ""}
+                userName={user?.firstName + " " + user?.lastName}
+            />
+
+            {/* Menu button: show below lg */}
+            <div className="lg:hidden flex items-center">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="text-gray-500 hover:text-gray-700"
@@ -164,7 +141,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="sm:hidden">
+          <div className="lg:hidden">
             <div className="pt-2 pb-3 space-y-1">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
@@ -236,5 +213,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {children}
       </main>
     </div>
+
   );
 };

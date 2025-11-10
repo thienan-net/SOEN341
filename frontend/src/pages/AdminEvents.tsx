@@ -11,10 +11,12 @@ import {
   Users, 
   DollarSign,
   Tag,
-  Building
+  Building,
+  Image
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useLocation } from 'react-router-dom';
 
 interface Event {
   _id: string;
@@ -63,11 +65,13 @@ const AdminEvents: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const status = searchParams.get("status");
   // Filters
   const [filters, setFilters] = useState({
     status: '',
-    isApproved: '',
+    isApproved: status === "pending" ? "false" : "",
     search: ''
   });
   
@@ -267,15 +271,26 @@ const AdminEvents: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {events.map((event) => (
                 <tr key={event._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td
+                    className="px-6 py-4 whitespace-nowrap"
+                    style={{
+                      overflowX: "auto",
+                      scrollbarWidth: "none",        
+                      msOverflowStyle: "none"         
+                    }}
+                  >                    
                     <div className="flex items-start">
-                      {event.imageUrl && (
-                        <img 
-                          src={event.imageUrl} 
-                          alt={event.title}
-                          className="w-16 h-16 rounded-lg object-cover mr-4"
-                        />
-                      )}
+                        {event.imageUrl ? (
+                          <img
+                            src={event.imageUrl}
+                            alt={event.title}
+                            className="w-16 h-16 rounded-lg object-cover mr-4"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center mr-4">
+                            <Image className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium text-gray-900 truncate">
                           {event.title}

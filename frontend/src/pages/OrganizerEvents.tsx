@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight, LogIn, ArrowUp, Ticket } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Search, Filter, ArrowRight, LogIn, ArrowUp, Ticket, Eye } from 'lucide-react';
 import axios from 'axios';
 import { formatDate, formatTime } from '../helper/date';
 import { toast } from 'react-toastify';
@@ -172,7 +172,11 @@ const OrganizerEvents: React.FC = () => {
                             {/* Header */}
                             <div className="flex items-start justify-between mb-3">
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
+                                    <Link to={`/events/${event._id}`}>
+                                    <h3 className="text-lg font-semibold text-gray-900 hover:text-primary-600 hover:underline transition">
+                                        {event.title}
+                                    </h3>
+                                    </Link>
                                     <p className="text-sm text-gray-500">{formatDate(event.date)} • {formatTime(event.startTime)} - {formatTime(event.endTime)}</p>
                                 </div>
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(event.category)}`}>
@@ -215,7 +219,7 @@ const OrganizerEvents: React.FC = () => {
 
                             {/* Actions */}
                             <div className="flex flex-wrap items-center justify-between gap-[10px]">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center flex-wrap gap-2">
                                     <button
                                         onClick={() => exportAttendeesToCSV(event._id)}
                                         className="text-xs px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50"
@@ -238,13 +242,6 @@ const OrganizerEvents: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            <Link
-                                to={`/events/${event._id}`}
-                                className="ml-1 mt-3 text-sm font-medium text-primary-600 hover:underline flex items-center"
-                            >
-                                View Details
-                                <ArrowRight className="w-4 h-4 ml-1" />
-                            </Link>
                         </div>
 
                     ))}
