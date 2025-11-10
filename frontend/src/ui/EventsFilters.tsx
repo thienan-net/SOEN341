@@ -1,38 +1,35 @@
 import React from 'react';
-import { Calendar, Search, Filter } from 'lucide-react';
+import { Calendar, Search, Filter, Box, HelpingHand, Briefcase, Globe, Users, School, Medal } from 'lucide-react';
 import { DateRangePicker } from 'rsuite';
 import 'rsuite/dist/rsuite.min.css';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, addMonths, endOfMonth } from 'date-fns';
+import { StyledSelect } from './StyledSelect';
 
 interface EventsFiltersProps {
-  filters: { search: string; dateRange: [Date, Date], category: string };
-  setFilters: React.Dispatch<React.SetStateAction<{ search: string; dateRange: [Date, Date], category: string }>>;
+  filters: { search: string; dateRange?: [Date, Date]; category: string };
+  setFilters: React.Dispatch<React.SetStateAction<{ search: string; dateRange?: [Date, Date]; category: string }>>;
 }
 
-const EventsFilters: React.FC<EventsFiltersProps> = ({
-  filters,
-  setFilters
-}) => {
-  const categories : { value: string; label: string}[] = [
-    { value: '', label: 'All Categories' },
-    { value: 'academic', label: 'Academic' },
-    { value: 'social', label: 'Social' },
-    { value: 'sports', label: 'Sports' },
-    { value: 'cultural', label: 'Cultural' },
-    { value: 'career', label: 'Career' },
-    { value: 'volunteer', label: 'Volunteer' },
-    { value: 'other', label: 'Other' }
+const EventsFilters: React.FC<EventsFiltersProps> = ({ filters, setFilters }) => {
+  const categories: { value: string; label: string; icon: JSX.Element }[] = [
+    { value: '', label: 'All Categories', icon: <Box /> },
+    { value: 'academic', label: 'Academic', icon: <School /> },
+    { value: 'social', label: 'Social', icon: <Users /> },
+    { value: 'sports', label: 'Sports', icon: <Medal /> },
+    { value: 'cultural', label: 'Cultural', icon: <Globe /> },
+    { value: 'career', label: 'Career', icon: <Briefcase /> },
+    { value: 'volunteer', label: 'Volunteer', icon: <HelpingHand /> },
+    { value: 'other', label: 'Other', icon: <Box /> },
   ];
+
   const handleFilterChange = (key: string, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   return (
-    <div
-      style={{ alignItems: 'center', display: 'flex', flexDirection: 'column' }}
-      className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-    >
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col items-center">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+        {/* Search */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
@@ -46,17 +43,15 @@ const EventsFilters: React.FC<EventsFiltersProps> = ({
           />
         </div>
 
+        {/* Date Range */}
         <div className="relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
             <Calendar className="h-5 w-5 text-gray-400" />
           </div>
           <DateRangePicker
             appearance="default"
-            value={filters.dateRange}
-            onChange={(range: [Date, Date] | null) => {
-              if (range) setFilters({...filters, dateRange: range});
-              else setFilters({...filters, dateRange: [new Date(), new Date()]});
-            }}
+            value={filters.dateRange || null}
+            onChange={(range: [Date, Date] | null) => handleFilterChange('dateRange', range || undefined)}
             placeholder="Select date range"
             format="MMM dd, yyyy"
             character="→"
@@ -99,34 +94,28 @@ const EventsFilters: React.FC<EventsFiltersProps> = ({
                 value: [
                   startOfMonth(addMonths(new Date(), 1)),
                   endOfMonth(addMonths(new Date(), 1))
-                ]
-              }
+                ],
+              },
             ]}
           />
         </div>
 
+        {/* Category */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Filter className="h-5 w-5 text-gray-400" />
           </div>
-          <select
-            className="input-field pl-10"
+          <StyledSelect 
+            options={categories}
             value={filters.category}
-            onChange={e => handleFilterChange('category', e.target.value)}
-          >
-            {categories.map((category) => (
-              <option key={category.value} value={category.value}>
-                {category.label}
-              </option>
-            ))}
-          </select>
+            onChange={(e) => handleFilterChange('category', e)}
+          />
         </div>
       </div>
 
+      {/* Clear Filters */}
       <button
-        onClick={() => {
-          setFilters({ search: '', dateRange: [new Date(), new Date()], category: '' });
-        }}
+        onClick={() => setFilters({ search: '', dateRange: undefined, category: '' })}
         className="btn-secondary mt-5"
       >
         Clear Filters
