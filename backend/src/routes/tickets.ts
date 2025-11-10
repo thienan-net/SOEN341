@@ -11,7 +11,7 @@ const router = express.Router();
 // @route   POST /api/tickets/claim
 // @desc    Claim a ticket for an event
 // @access  Private (Student)
-router.post('/claim', authenticate, authorize('student'), requireApproval, [
+router.post('/claim', authenticate, authorize('student'), [
   body('eventId').isMongoId(),
   body('paymentMethod').optional().isString() // For future payment integration
 ], async (req: AuthRequest, res: express.Response) => {
