@@ -60,14 +60,12 @@ router.get('/', [
       ];
     }
 
-    console.log("events---", await Event.find()); // all events
     const events = await Event.find(filter)
       .populate('organization', 'name logo')
       .populate('createdBy', 'firstName lastName')
       .sort({ date: 1 })
       .skip(skip)
       .limit(Number(limit));
-    console.log("events filter----", events);
 
     const total = await Event.countDocuments(filter);
 
@@ -156,7 +154,6 @@ router.post('/', authenticate, authorize('organizer'), requireApproval, [
       createdBy: req.user!._id,
       status: 'draft'
     };
-
     const event = new Event(eventData);
     await event.save();
 
