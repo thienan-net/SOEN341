@@ -59,7 +59,8 @@ router.get("/organizer", [
 // @access  Public
 router.get('/', [
   query('category').optional().isIn(['academic', 'social', 'sports', 'cultural', 'career', 'volunteer', 'other']),
-  query('date').optional().isISO8601(),
+  query('dateStart').optional().isISO8601(),
+  query('dateEnd').optional().isISO8601(),
   query('search').optional().isString(),
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 })
@@ -70,25 +71,34 @@ router.get('/', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { category, date, search, page = 1, limit = 10 } = req.query;
+    const { category, dateStart, dateEnd, search, page = 1, limit = 10 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     // Build filter object
-    const filter: any = {
-      date: { $gte: new Date() } // Only future events
-    };
+    const filter: any = {};
 
-    if (category) {
-      filter.category = category;
+    // --- Date range filter ---
+    if (dateStart || dateEnd) {
+      const startDate = dateStart ? new Date(dateStart as string) : new Date();
+      startDate.setHours(0, 0, 0, 0); 
+
+      let endDate: Date | undefined;
+      if (dateEnd) {
+        endDate = new Date(dateEnd as string);
+        endDate.setHours(23, 59, 59, 999); 
+      }
+
+      filter.date = endDate ? { $gte: startDate, $lte: endDate } : { $gte: startDate };
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      filter.date = { $gte: today };
     }
 
-    if (date) {
-      const startDate = new Date(date as string);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 1);
-      filter.date = { $gte: startDate, $lt: endDate };
-    }
+    // --- Category filter ---
+    if (category) filter.category = category;
 
+    // --- Search filter ---
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -237,7 +247,6 @@ router.post('/', authenticate, authorize('organizer'), requireApproval, [
       createdBy: req.user!._id,
       status: 'draft'
     };
-
     const event = new Event(eventData);
     await event.save();
 
