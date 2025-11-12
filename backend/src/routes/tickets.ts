@@ -65,20 +65,21 @@ router.post('/validate', async (req, res) => {
 
   try {
     const parsed = JSON.parse(qrData);
-    const ticket = (await Ticket.findOne({ _id: parsed.ticketId })) as ITicket | null;
+    const idToFind = parsed.ticketId || parsed._id || parsed.qrCode?.ticketId;
+    if (!idToFind) return res.status(400).json({ message: 'Invalid QR data' });
 
-    if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
-    }
+    const ticket = (await Ticket.findById(idToFind)) as ITicket | null;
+    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
     return res.status(200).json({
       valid: true,
       ticket: {
         ticketId: String(ticket._id),
-        status: 'active',
+        status: ticket.status,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error('Error validating QR:', error);
     return res.status(400).json({ message: 'Invalid qrData format' });
   }
 });
