@@ -16,9 +16,7 @@ router.use((req: AuthRequest, _res: express.Response, next: express.NextFunction
 
 router.get('/my', authenticate, async (req: AuthRequest, res: express.Response) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
     const tickets = await Ticket.find({ user: req.user._id })
         .populate('event', 'title date startTime endTime location organization')
@@ -38,26 +36,18 @@ router.post(
     async (req: AuthRequest, res: express.Response) => {
       try {
         const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-          return res.status(400).json({ errors: errors.array() });
-        }
+        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
         const { eventId } = req.body;
         const userId = req.user?._id;
 
-        if (!userId) {
-          return res.status(401).json({ message: 'User not authenticated' });
-        }
+        if (!userId) return res.status(401).json({ message: 'User not authenticated' });
 
         const event = await Event.findById(eventId);
-        if (!event) {
-          return res.status(404).json({ message: 'Event not found' });
-        }
+        if (!event) return res.status(404).json({ message: 'Event not found' });
 
         const existingTicket = await Ticket.findOne({ event: eventId, user: userId });
-        if (existingTicket) {
-          return res.status(400).json({ message: 'Ticket already claimed for this event' });
-        }
+        if (existingTicket) return res.status(400).json({ message: 'Ticket already claimed' });
 
         const ticket = new Ticket({
           event: eventId,
@@ -69,8 +59,7 @@ router.post(
 
         await ticket.save();
 
-        console.log(`[Tickets] New ticket claimed by ${req.user?.email} for event ${event.title}`);
-
+        console.log(`[Tickets] Ticket claimed by ${req.user?.email} for event ${event.title}`);
         return res.status(201).json(ticket);
       } catch (error) {
         console.error('Error claiming ticket:', error);
@@ -81,10 +70,28 @@ router.post(
 
 router.post('/validate', async (req, res) => {
   const { qrData } = req.body;
+
   if (!qrData) return res.status(400).json({ message: 'Missing qrData' });
 
-  // Simulate QR validation success for CI test
-  return res.status(200).json({ valid: true, qrData });
+  try {
+    const parsed = JSON.parse(qrData);
+    const ticket = await Ticket.findById(parsed.ticketId).populate('event user');
+
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    return res.status(200).json({
+      valid: true,
+      ticket: {
+        ticketId: ticket.ticketId ?? ticket._id,
+        status: ticket.status,
+      },
+    });
+  } catch (err) {
+    console.error('Error validating QR:', err);
+    return res.status(400).json({ message: 'Invalid qrData format' });
+  }
 });
 
 export default router;
