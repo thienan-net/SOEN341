@@ -15,6 +15,16 @@ interface Props {
     tickets: TicketData[];
     setTickets: React.Dispatch<React.SetStateAction<TicketData[]>>;
 }
+export const returnReasons = [
+    { value: 'unable_to_attend', label: 'Unable to attend' },
+    { value: 'no_longer_interested', label: 'No longer interested' },
+    { value: 'wrong_event', label: 'Wrong event' },
+    { value: 'duplicate_ticket', label: 'Duplicate ticket' },
+    { value: 'event_canceled', label: 'Event canceled by organizer' },
+    { value: 'schedule_conflict', label: 'Schedule conflict' },
+    { value: 'personal_reasons', label: 'Personal reasons' },
+    { value: 'other', label: 'Other' },
+];
 
 export const TicketCard = ({ ticket, tickets, setTickets }: Props) => {
     const [showReturnModal, setShowReturnModal] = useState(false);
@@ -29,16 +39,7 @@ export const TicketCard = ({ ticket, tickets, setTickets }: Props) => {
         };
         return colors[status] || "bg-gray-100 text-gray-800";
     };
-    const returnReasons = [
-        { value: 'unable_to_attend', label: 'Unable to attend' },
-        { value: 'no_longer_interested', label: 'No longer interested' },
-        { value: 'wrong_event', label: 'Wrong event' },
-        { value: 'duplicate_ticket', label: 'Duplicate ticket' },
-        { value: 'event_canceled', label: 'Event canceled by organizer' },
-        { value: 'schedule_conflict', label: 'Schedule conflict' },
-        { value: 'personal_reasons', label: 'Personal reasons' },
-        { value: 'other', label: 'Other' },
-    ];
+
     const downloadQRCode = () => {
         const link = document.createElement("a");
         link.download = `ticket-${ticket.ticketId}.png`;
