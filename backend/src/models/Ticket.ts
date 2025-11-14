@@ -13,6 +13,7 @@ export interface ITicket extends Document {
   updatedAt: Date;
 }
 
+// @ts-ignore
 const TicketSchema = new Schema<ITicket>(
   {
     ticketId: {
