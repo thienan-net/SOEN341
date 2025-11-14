@@ -18,19 +18,46 @@ const generateToken = (userId: string) => {
 // @desc    Register a new user
 // @access  Public
 router.post('/register', [
-  body('email').isEmail().normalizeEmail(),
+  body('email').custom((value) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      throw new Error('Please enter a valid email address');
+    }
+    return true;
+  }).normalizeEmail(),
   body('password').isLength({ min: 6 }),
   body('firstName').trim().notEmpty(),
   body('lastName').trim().notEmpty(),
   body('role').isIn(['student', 'organizer']),
-  body('studentId').optional().trim(),
-  body('organizationName').optional().trim(),
+  body('studentId').custom((value, { req }) => {
+    if (req.body.role === 'student') {
+      if (!value || !value.trim()) {
+        throw new Error('Student ID is required for students');
+      }
+    }
+    return true;
+  }),
+  body('organizationName').custom((value, { req }) => {
+    if (req.body.role === 'organizer') {
+      if (!value || !value.trim()) {
+        throw new Error('Organization name is required for organizers');
+      }
+    }
+    return true;
+  }),
   body('phoneNumber').optional().trim()
 ], async (req: express.Request, res: express.Response) => {
   try {
+    console.log('Registration request body:', req.body);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      console.log('Validation errors:', errors.array());
+      const firstError = errors.array()[0];
+      return res.status(400).json({ 
+        message: firstError.msg,
+        errors: errors.array() 
+      });
     }
 
     const { email, password, firstName, lastName, role, studentId, organizationName, phoneNumber } = req.body;
@@ -55,8 +82,8 @@ router.post('/register', [
       lastName,
       role,
       studentId: role === 'student' ? studentId : undefined,
-      phoneNumber,
-      isApproved: role === 'student' // Students are auto-approved
+      phoneNumber
+      // isApproved will be set by schema default based on role
     });
 
     // If organizer, find or create organization and link it before saving user
@@ -78,8 +105,7 @@ router.post('/register', [
 
       // Link organization to user
       user.organization = organization._id as any;
-      // Organizers should not be auto-approved by default
-      user.isApproved = false;
+      // Organizers use organizerStatus (defaults to 'pending'), not isApproved
     }
 
     // Now save the user (password will be hashed in pre-save)

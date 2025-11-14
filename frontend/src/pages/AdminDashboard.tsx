@@ -210,7 +210,7 @@ const AdminDashboard: React.FC = () => {
           <p className="text-gray-600">Platform overview</p>
         </div>
         <Link
-          to="/admin/events"
+          to="/admin/events?status=pending"
           className="btn-primary flex items-center"
         >
           <TrendingUp className="w-4 h-4 mr-2" />
@@ -370,7 +370,7 @@ const AdminDashboard: React.FC = () => {
             {mostPopular.recentTickets.map((ticket) => (
               <div key={ticket.ticketId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{ticket.event.title} {ticket.ticketId}</h3>
+                  <h3 className="font-medium text-gray-900">{ticket.event.title}</h3>
                   <p className="text-sm text-gray-600">
                     {new Date(ticket.createdAt).toLocaleDateString()} • Ticket price: ${ticket.price}
                   </p>

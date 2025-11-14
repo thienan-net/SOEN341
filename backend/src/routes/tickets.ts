@@ -11,7 +11,7 @@ const router = express.Router();
 // @route   POST /api/tickets/claim
 // @desc    Claim a ticket for an event
 // @access  Private (Student)
-router.post('/claim', authenticate, authorize('student'), requireApproval, [
+router.post('/claim', authenticate, authorize('student'), [
   body('eventId').isMongoId(),
   body('paymentMethod').optional().isString() // For future payment integration
 ], async (req: AuthRequest, res: express.Response) => {
@@ -111,7 +111,7 @@ router.post('/claim', authenticate, authorize('student'), requireApproval, [
 // @route   GET /api/tickets/my
 // @desc    Get user's tickets
 // @access  Private (Student)
-router.get('/my', authenticate, authorize('student'), requireApproval, async (req: AuthRequest, res: express.Response) => {
+router.get('/my', authenticate, authorize('student'), async (req: AuthRequest, res: express.Response) => {
   try {
     const tickets = await Ticket.find({ user: req.user!._id })
       .populate({
@@ -174,10 +174,13 @@ router.get('/ticket-details/:id', authenticate, requireApproval, async (req: Aut
       if (userRole === 'student' && !isOwner) {
         return res.status(403).json({ message: 'Access denied' });
       }
-    // Check if ticket belongs to organizer's organization
-      if ((ticket.event as any).organization._id.toString() !== req.user!.organization!.toString()) {
-        return res.status(403).json({ message: 'Access denied' });
+      // Check if ticket belongs to organizer's organization
+      if (
+        (ticket.event as any).organization._id.toString() !== req.user!.organization!.toString()
+      ) {
+        return res.status(403).json({ message: "Access denied" });
       }
+
       // Generate QR code if available
       let qrCodeImage = null;
       if (ticket.qrCode) {

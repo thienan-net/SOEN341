@@ -28,7 +28,12 @@ const OrganizerDashboard: React.FC = () => {
   });
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const statsBoxes = [
+      { title: "Total Events", value: stats.totalEvents, bg: "bg-primary-100", color: "text-primary-600", icon: Calendar },
+      { title: "Published", value: stats.publishedEvents, bg: "bg-green-100", color: "text-green-600", icon: BarChart3 },
+      { title: "Total Tickets", value: stats.totalTickets, bg: "bg-yellow-100", color: "text-yellow-600", icon: Ticket },
+      { title: "Pending", value: stats.pendingEvents, bg: "bg-orange-100", color: "text-orange-600", icon: TrendingUp },
+  ]
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -44,6 +49,7 @@ const OrganizerDashboard: React.FC = () => {
       setLoading(false);
     }
   };
+  console.log(recentEvents)
 
   if (loading) {
     return (
@@ -55,6 +61,7 @@ const OrganizerDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -62,7 +69,7 @@ const OrganizerDashboard: React.FC = () => {
         </div>
         <Link
           to="/organizer/events/create"
-          className="btn-primary flex items-center"
+          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-lg shadow hover:bg-primary-700 transition-colors hover:text-white hover:no-underline"
         >
           <Plus className="w-4 h-4 mr-2" />
           Create Event
@@ -71,62 +78,28 @@ const OrganizerDashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="card">
-          <div className="flex items-center">
-            <div className="bg-primary-100 rounded-full w-12 h-12 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-primary-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Events</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalEvents}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center">
-            <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Published</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.publishedEvents}</p>
+        {statsBoxes.map((stat, idx) => (
+          <div key={idx} className="card p-4 rounded-xl shadow hover:shadow-lg transition">
+            <div className="flex items-center">
+              <div className={`${stat.bg} rounded-full w-12 h-12 flex items-center justify-center`}>
+                <stat.icon className={`w-6 h-6 ${stat.color}`} />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center">
-            <div className="bg-yellow-100 rounded-full w-12 h-12 flex items-center justify-center">
-              <Ticket className="w-6 h-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Tickets</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalTickets}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center">
-            <div className="bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.pendingEvents}</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Recent Events */}
-      <div className="card">
+      <div className="card p-6 rounded-xl shadow">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">Recent Events</h2>
           <Link
             to="/organizer/events"
-            className="text-primary-600 hover:text-primary-700 font-medium"
+            className="text-primary-600 hover:text-primary-700 font-medium transition"
           >
             View All
           </Link>
@@ -139,7 +112,7 @@ const OrganizerDashboard: React.FC = () => {
             <p className="text-gray-600 mb-4">Create your first event to get started!</p>
             <Link
               to="/organizer/events/create"
-              className="btn-primary"
+              className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg shadow hover:bg-primary-700 transition-colors"
             >
               Create Event
             </Link>
@@ -147,37 +120,46 @@ const OrganizerDashboard: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {recentEvents.map((event) => (
-              <div key={event._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{event.title}</h3>
-                  <p className="text-sm text-gray-600">
+              <div
+                key={event._id}
+                className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-lg transition"
+              >
+                <div className="flex-1 mb-2 md:mb-0">
+                  <h3 className="font-semibold text-gray-900 text-lg">{event.title}</h3>
+                  <p className="text-sm text-gray-500">
                     {new Date(event.date).toLocaleDateString()} • {event.ticketsIssued} tickets issued
                   </p>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    event.status === 'published' 
-                      ? 'bg-green-100 text-green-800'
-                      : event.status === 'draft'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
+                <div className="flex items-center">
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                      event.status === 'published'
+                        ? 'bg-green-100 text-green-800'
+                        : event.status === 'draft'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
                     {event.status}
                   </span>
-                  <Link
-                    to={`/organizer/events/${event._id}/analytics`}
-                    className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-                  >
-                    View Analytics
-                  </Link>
                 </div>
               </div>
             ))}
+              <div className="flex justify-end items-center mb-4">
+                <Link
+                  to="/organizer/events/analytics"
+                  className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 hover:text-white hover:no-underline transition-colors"
+                >
+                  View Analytics
+                </Link>
+              </div>
+
           </div>
         )}
       </div>
     </div>
+
   );
 };
 
-export default OrganizerDashboard;
+export default OrganizerDashboard;  

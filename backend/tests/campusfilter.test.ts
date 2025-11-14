@@ -105,7 +105,7 @@ const seedEvents = async () => {
   return { orgId, createdBy, plus1, plus2, plus3 };
 };
 
-describe('Feature 1.2 – Filter Campus Events', () => {
+describe('Feature 1.2 – Filter Campus Events (with date range)', () => {
   it('GET /api/events returns all published & approved events', async () => {
     await seedEvents();
 
@@ -131,7 +131,6 @@ describe('Feature 1.2 – Filter Campus Events', () => {
     expect(events.length).toBe(1);
     expect(events[0].title).toBe('Jazz Night');
   });
-  
 
   it('GET /api/events?search=basketball filters by search term', async () => {
     await seedEvents();
@@ -142,14 +141,21 @@ describe('Feature 1.2 – Filter Campus Events', () => {
     expect(events[0].title).toContain('Basketball');
   });
 
-  it('GET /api/events?date filters by exact date', async () => {
-    const { plus1 } = await seedEvents();
+  it('GET /api/events?dateStart=...&dateEnd=... filters by date range', async () => {
+    const { plus1, plus2 } = await seedEvents();
 
-    const dateParam = plus1.toISOString().split('T')[0];
-    const res = await request(app).get(`/api/events?date=${dateParam}`).expect(200);
+    const start = plus1.toISOString();
+    const end = plus2.toISOString();
+
+    const res = await request(app)
+      .get(`/api/events?dateStart=${start}&dateEnd=${end}`)
+      .expect(200);
+
     const events = res.body.events || [];
-    expect(events.length).toBe(1);
-    expect(events[0].title).toBe('Basketball Tournament');
+    expect(events.length).toBe(2);
+    const titles = events.map((e: any) => e.title);
+    expect(titles).toContain('Basketball Tournament');
+    expect(titles).toContain('Jazz Night');
   });
 
   it('GET /api/events?category=invalid returns 400 for invalid category', async () => {

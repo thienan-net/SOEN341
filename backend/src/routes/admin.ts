@@ -31,7 +31,12 @@ router.get('/dashboard', authenticate, authorize('admin'), async (req: AuthReque
       User.countDocuments(),
       Event.countDocuments(),
       Ticket.countDocuments(),
-      User.countDocuments({ isApproved: false }),
+      User.countDocuments({
+        $or: [
+          { role: { $in: ['student', 'admin'] }, isApproved: false },
+          { role: 'organizer', organizerStatus: 'pending' }
+        ]
+      }),
       Event.find({ status: 'published' })
         .populate('organization', 'name logo')
         .populate('createdBy', 'firstName lastName')
@@ -119,7 +124,18 @@ router.get('/users', authenticate, authorize('admin'), [
 
     const filter: any = {};
     if (role) filter.role = role;
-    if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
+    
+    if (isApproved !== undefined) {
+      const approvalStatus = isApproved === 'true';
+      
+      if (role === 'organizer') {
+        // For organizers, filter by organizerStatus
+        filter.organizerStatus = approvalStatus ? 'approved' : { $in: ['pending', 'rejected'] };
+      } else {
+        // For students and admins, filter by isApproved
+        filter.isApproved = approvalStatus;
+      }
+    }
 
     const users = await User.find(filter)
       .select('-password')
@@ -159,19 +175,33 @@ router.put('/users/:id/approve', authenticate, authorize('admin'), [
     }
 
     const { isApproved } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { isApproved },
-      { new: true }
-    ).select('-password').populate('organization', 'name');
-
+    const user = await User.findById(req.params.id);
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Handle approval differently based on user role
+    const updateData: any = {};
+    
+    if (user.role === 'organizer') {
+      // For organizers, update both organizerStatus and isApproved
+      updateData.organizerStatus = isApproved ? 'approved' : 'rejected';
+      updateData.isApproved = isApproved;
+    } else {
+      // For students and admins, update isApproved
+      updateData.isApproved = isApproved;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    ).select('-password').populate('organization', 'name');
+
     res.json({
       message: `User ${isApproved ? 'approved' : 'rejected'} successfully`,
-      user
+      user: updatedUser
     });
   } catch (error) {
     console.error('Approve user error:', error);
@@ -210,7 +240,7 @@ router.delete('/users/:id', authenticate, authorize('admin'), async (req: AuthRe
 // @access  Private (Admin)
 router.put('/users/:id/role', authenticate, authorize('admin'), [
   body('role').isIn(['student', 'organizer', 'admin']),
-  body('organizationId').optional().isMongoId()
+  body('organizationName').optional().isString().trim().notEmpty()
 ], async (req: AuthRequest, res: express.Response) => {
   try {
     const errors = validationResult(req);
@@ -218,11 +248,26 @@ router.put('/users/:id/role', authenticate, authorize('admin'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { role, organizationId } = req.body;
+    const { role, organizationName } = req.body;
     const updateData: any = { role };
 
-    if (role === 'organizer' && organizationId) {
-      updateData.organization = organizationId;
+    if (role === 'organizer' && organizationName) {
+      // Find existing organization or create a new one
+      let organization = await Organization.findOne({ name: { $regex: new RegExp(`^${organizationName}$`, 'i') } });
+      
+      if (!organization) {
+        // Create new organization
+        organization = new Organization({
+          name: organizationName,
+          description: `Organization: ${organizationName}`,
+          contactEmail: `contact@${organizationName.toLowerCase().replace(/\s+/g, '')}.org`,
+          createdBy: req.user!._id,
+          isActive: true
+        });
+        await organization.save();
+      }
+      
+      updateData.organization = organization._id;
     } else if (role === 'student') {
       updateData.organization = undefined;
     }
@@ -377,9 +422,18 @@ router.put('/events/:id/approve', authenticate, authorize('admin'), [
     }
 
     const { isApproved, reason } = req.body;
+    
+    // Prepare update data
+    const updateData: any = { isApproved };
+    
+    // If approving the event, also set status to published
+    if (isApproved) {
+      updateData.status = 'published';
+    }
+    
     const event = await Event.findByIdAndUpdate(
       req.params.id,
-      { isApproved },
+      updateData,
       { new: true }
     ).populate('organization', 'name').populate('createdBy', 'firstName lastName email');
 
@@ -584,17 +638,94 @@ router.post('/events/:eventId/reject',
   }
 );
 
+// @route   POST /api/admin/organizations
+// @desc    Create a new organization
+// @access  Private (Admin)
+router.post('/organizations', authenticate, authorize('admin'), [
+  body('name').trim().notEmpty().withMessage('Organization name is required'),
+  body('description').trim().notEmpty().withMessage('Description is required'),
+  body('contactEmail').isEmail().withMessage('Valid contact email is required'),
+  body('website').optional().isURL().withMessage('Website must be a valid URL'),
+  body('isActive').optional().isBoolean()
+], async (req: AuthRequest, res: express.Response) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, description, contactEmail, website, isActive = true } = req.body;
+
+    // Check if organization name already exists
+    const existingOrg = await Organization.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+    if (existingOrg) {
+      return res.status(400).json({ message: 'An organization with this name already exists' });
+    }
+
+    const organization = new Organization({
+      name: name.trim(),
+      description: description.trim(),
+      contactEmail: contactEmail.toLowerCase().trim(),
+      website: website?.trim(),
+      isActive,
+      createdBy: req.user!.id
+    });
+
+    await organization.save();
+    await organization.populate('createdBy', 'firstName lastName email');
+
+    res.status(201).json({
+      message: 'Organization created successfully',
+      organization
+    });
+  } catch (error) {
+    console.error('Create organization error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // @route   GET /api/admin/organizations
-// @desc    Get all organizations
+// @desc    Get all organizations with filtering and pagination
 // @access  Private (Admin)
 router.get('/organizations', authenticate, authorize('admin'), async (req: AuthRequest, res: express.Response) => {
   try {
-    const organizations = await Organization.find()
-      .populate('createdBy', 'firstName lastName email')
-      .sort({ createdAt: -1 });
+    const { page = '1', limit = '10', status, search } = req.query;
+    const pageNum = Math.max(1, parseInt(page as string));
+    const limitNum = Math.max(1, Math.min(50, parseInt(limit as string)));
+    const skip = (pageNum - 1) * limitNum;
 
-    res.json(organizations);
+    // Build filter query
+    const filter: any = {};
+    
+    if (status === 'active') filter.isActive = true;
+    if (status === 'inactive') filter.isActive = false;
+    
+    if (search) {
+      const searchRegex = new RegExp(search as string, 'i');
+      filter.$or = [
+        { name: searchRegex },
+        { description: searchRegex },
+        { contactEmail: searchRegex }
+      ];
+    }
+
+    const [organizations, total] = await Promise.all([
+      Organization.find(filter)
+        .populate('createdBy', 'firstName lastName email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Organization.countDocuments(filter)
+    ]);
+
+    res.json({
+      organizations,
+      pagination: {
+        current: pageNum,
+        pages: Math.ceil(total / limitNum),
+        total
+      }
+    });
   } catch (error) {
     console.error('Get organizations error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -670,6 +801,30 @@ router.delete('/organizations/:id', authenticate, authorize('admin'), async (req
     res.json({ message: 'Organization deleted successfully' });
   } catch (error) {
     console.error('Delete organization error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PUT /api/admin/organizations/:id/toggle-status
+// @desc    Toggle organization active status
+// @access  Private (Admin)
+router.put('/organizations/:id/toggle-status', authenticate, authorize('admin'), async (req: AuthRequest, res: express.Response) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    organization.isActive = !organization.isActive;
+    await organization.save();
+    await organization.populate('createdBy', 'firstName lastName email');
+
+    res.json({
+      message: `Organization ${organization.isActive ? 'activated' : 'deactivated'} successfully`,
+      organization
+    });
+  } catch (error) {
+    console.error('Toggle organization status error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
