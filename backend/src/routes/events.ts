@@ -3,6 +3,7 @@ import { body, validationResult, query } from 'express-validator';
 import Event from '../models/Event';
 import Ticket from '../models/Ticket';
 import { authenticate, AuthRequest, authorize, requireApproval } from '../middleware/auth';
+import SavedEvent from '../models/SavedEvent';
 
 
 const router = express.Router();
@@ -319,6 +320,98 @@ router.delete('/:id', authenticate, authorize('organizer'), requireApproval, asy
     res.json({ message: 'Event deleted successfully' });
   } catch (error) {
     console.error('Delete event error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/events/:id/save
+// @desc    Save event to user's calendar
+// @access  Private (Student)
+router.post('/:id/save', authenticate, authorize('student'), async (req: AuthRequest, res: express.Response) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const existingSavedEvent = await SavedEvent.findOne({
+      user: req.user!._id,
+      event: req.params.id
+    });
+
+    if (existingSavedEvent) {
+      return res.status(400).json({ message: 'Event already saved' });
+    }
+
+    const savedEvent = new SavedEvent({
+      user: req.user!._id,
+      event: req.params.id
+    });
+
+    await savedEvent.save();
+    res.json({ message: 'Event saved successfully' });
+  } catch (error) {
+    console.error('Save event error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/events/:id/save
+// @desc    Remove event from user's calendar
+// @access  Private (Student)
+router.delete('/:id/save', authenticate, authorize('student'), async (req: AuthRequest, res: express.Response) => {
+  try {
+    await SavedEvent.findOneAndDelete({
+      user: req.user!._id,
+      event: req.params.id
+    });
+
+    res.json({ message: 'Event removed from calendar' });
+  } catch (error) {
+    console.error('Remove saved event error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/events/saved/my
+// @desc    Get user's saved events
+// @access  Private (Student)
+router.get('/saved/my', authenticate, authorize('student'), async (req: AuthRequest, res: express.Response) => {
+  try {
+    const userId = req.user!._id;
+
+    const savedEvents = await SavedEvent.find({ user: userId })
+      .populate({
+        path: 'event',
+        populate: { path: 'organization', select: 'name logo' },
+      })
+      .sort({ createdAt: -1 });
+
+    const eventsWithDetails = await Promise.all(
+      savedEvents.map(async (saved) => {
+        const eventDoc = saved.event as any; // cast to populated Event
+        if (!eventDoc) return null;
+
+        const ticketsIssued = await Ticket.countDocuments({
+          event: eventDoc._id,
+          status: 'active',
+        });
+
+        const remainingCapacity = eventDoc.capacity
+          ? eventDoc.capacity - ticketsIssued
+          : null;
+
+        return {
+          ...eventDoc.toObject(), // works because we casted it
+          ticketsIssued,
+          remainingCapacity,
+        };
+      })
+    );
+
+    res.json(eventsWithDetails.filter(Boolean));
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
