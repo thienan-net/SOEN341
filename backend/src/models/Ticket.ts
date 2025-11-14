@@ -11,6 +11,8 @@ export interface ITicket extends Document {
   price?: number;
   createdAt: Date;
   updatedAt: Date;
+  returnReason: string;
+  returnComment: string;
 }
 
 // @ts-ignore
@@ -51,6 +53,14 @@ const TicketSchema = new Schema<ITicket>(
     price: {
       type: Number,
       min: 0
+    },
+    returnComment: {
+      type: String,
+      default: ''
+    },
+    returnReason: {
+      type: String,
+      default: ''
     }
   },
   {

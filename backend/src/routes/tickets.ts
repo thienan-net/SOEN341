@@ -180,6 +180,7 @@ router.post(
     authorize("student"),
     async (req: AuthRequest, res: express.Response) => {
       try {
+        const { reason, comment } = req.body;
         const ticket = await Ticket.findOne({ ticketId: req.params.id });
 
         if (!ticket)
@@ -190,9 +191,17 @@ router.post(
 
         if (ticket.status !== "active")
           return res.status(400).json({ message: "Ticket is not active" });
-
+        
+        const event = await Event.findById(ticket.event._id);
+        if(!event) {
+          return res.status(404).json({message: "Event not found"})
+        }
         ticket.status = "cancelled";
-        await ticket.save();
+        ticket.returnReason = reason;
+        ticket.returnComment = comment;
+        event.registrations = Math.max((event.registrations || 0) - 1, 0);
+
+        await Promise.all([ticket.save(), event.save()])
 
         return res.json({ message: "Ticket returned successfully" });
       } catch (error) {

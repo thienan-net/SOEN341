@@ -82,88 +82,145 @@ router.put('/profile', authenticate, [
 // @route   GET /api/users/organizer/dashboard
 // @desc    Get organizer dashboard
 // @access  Private (Organizer)
-router.get('/organizer/dashboard', authenticate, authorize('organizer'), requireApproval, async (req: AuthRequest, res: express.Response) => {
-  try {
-    const [
-      totalEvents,
-      publishedEvents,
-      totalTickets,
-      recentEvents,
-      upcomingEvents
-    ] = await Promise.all([
-      Event.countDocuments({ createdBy: req.user!._id }),
-      Event.countDocuments({ createdBy: req.user!._id, status: 'published', isApproved: true }),
-      Ticket.countDocuments({ 
-        event: { $in: await Event.find({ createdBy: req.user!._id }).distinct('_id') }
-      }),
-      Event.find({ createdBy: req.user!._id })
-        .populate('organization', 'name')
-        .sort({ createdAt: -1 })
-        .limit(5),
-      Event.find({ 
-        createdBy: req.user!._id, 
-        status: 'published',
-        isApproved: true,
-        date: { $gte: new Date() }
-      })
-        .populate('organization', 'name')
-        .sort({ date: 1 })
-        .limit(5)
-    ]);
+router.get(
+  '/organizer/dashboard',
+  authenticate,
+  authorize('organizer'),
+  requireApproval,
+  async (req: AuthRequest, res: express.Response) => {
+    try {
+      // Fetch all organizer event IDs once
+      const eventIds = await Event.find({
+        createdBy: req.user!._id
+      }).distinct('_id');
 
-    // Get event statistics
-    const eventStats = await Event.aggregate([
-      { $match: { createdBy: req.user!._id } },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
+      const ticketCountsAgg = await Ticket.aggregate([
+        { $match: { event: { $in: eventIds } } },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 }
+          }
         }
-      }
-    ]);
+      ]);
 
-    // Get monthly ticket sales
-    const monthlyTickets = await Ticket.aggregate([
-      {
-        $lookup: {
-          from: 'events',
-          localField: 'event',
-          foreignField: '_id',
-          as: 'event'
-        }
-      },
-      { $unwind: '$event' },
-      { $match: { 'event.createdBy': req.user!._id } },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' }
+      const activeTickets =
+        (ticketCountsAgg.find(t => t._id === 'active')?.count || 0) +
+        (ticketCountsAgg.find(t => t._id === 'used')?.count || 0);
+
+      const cancelledTickets =
+        ticketCountsAgg.find(t => t._id === 'cancelled')?.count || 0;
+      // Cancelled ticket analytics by returnReason
+      const cancelledAnalytics = await Ticket.aggregate([
+          {
+            $match: {
+              event: { $in: eventIds },
+              status: 'cancelled'
+            }
           },
-          ticketCount: { $sum: 1 }
-        }
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } },
-      { $limit: 12 }
-    ]);
-
-    res.json({
-      stats: {
+          {
+            $group: {
+              _id: '$returnReason',
+              count: { $sum: 1 }
+            }
+          },
+          {
+            $project: {
+              _id: 0,
+              reason: '$_id',
+              count: 1
+            }
+          }
+      ]);
+      const [
         totalEvents,
         publishedEvents,
         totalTickets,
-        pendingEvents: totalEvents - publishedEvents
-      },
-      eventStatusBreakdown: eventStats,
-      recentEvents,
-      upcomingEvents,
-      monthlyTickets
-    });
-  } catch (error) {
-    console.error('Organizer dashboard error:', error);
-    res.status(500).json({ message: 'Server error' });
+        recentEvents,
+        upcomingEvents
+      ] = await Promise.all([
+        Event.countDocuments({ createdBy: req.user!._id }),
+        Event.countDocuments({
+          createdBy: req.user!._id,
+          status: 'published',
+          isApproved: true
+        }),
+        Ticket.countDocuments({
+          event: { $in: eventIds }
+        }),
+        Event.find({ createdBy: req.user!._id })
+          .populate('organization', 'name')
+          .sort({ createdAt: -1 })
+          .limit(5),
+        Event.find({
+          createdBy: req.user!._id,
+          status: 'published',
+          isApproved: true,
+          date: { $gte: new Date() }
+        })
+          .populate('organization', 'name')
+          .sort({ date: 1 })
+          .limit(5)
+      ]);
+
+      const eventStats = await Event.aggregate([
+        { $match: { createdBy: req.user!._id } },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      const monthlyTickets = await Ticket.aggregate([
+        {
+          $lookup: {
+            from: 'events',
+            localField: 'event',
+            foreignField: '_id',
+            as: 'event'
+          }
+        },
+        { $unwind: '$event' },
+        { $match: { 'event.createdBy': req.user!._id } },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' }
+            },
+            ticketCount: { $sum: 1 }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } },
+        { $limit: 12 }
+      ]);
+
+      res.json({
+        stats: {
+          totalEvents,
+          publishedEvents,
+          totalTickets,
+          pendingEvents: totalEvents - publishedEvents
+        },
+        ticketCounts: {
+          active: activeTickets,
+          cancelled: cancelledTickets
+        },
+        cancelledTicketsAnalytics: cancelledAnalytics, 
+        eventStatusBreakdown: eventStats,
+        recentEvents,
+        upcomingEvents,
+        monthlyTickets
+      });
+    } catch (error) {
+      console.error('Organizer dashboard error:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
   }
-});
+);
+
 
 // @route   GET /api/users/organizer/events
 // @desc    Get organizer's events
