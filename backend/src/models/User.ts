@@ -72,6 +72,8 @@ const UserSchema = new Schema<IUser>({
   isApproved: {
     type: Boolean,
     default: function(this: IUser) {
+      // Only students and admins use isApproved
+      // Organizers use organizerStatus instead
       return this.role === 'student' || this.role === 'admin';
     }
   },
