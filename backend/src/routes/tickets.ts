@@ -111,7 +111,7 @@ router.post('/claim', authenticate, authorize('student'), [
 // @route   GET /api/tickets/my
 // @desc    Get user's tickets
 // @access  Private (Student)
-router.get('/my', authenticate, authorize('student'), requireApproval, async (req: AuthRequest, res: express.Response) => {
+router.get('/my', authenticate, authorize('student'), async (req: AuthRequest, res: express.Response) => {
   try {
     const tickets = await Ticket.find({ user: req.user!._id })
       .populate({

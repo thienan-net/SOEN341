@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Ticket, Calendar, MapPin, Clock, Download, QrCode } from 'lucide-react';
+import { Ticket, Calendar, MapPin, Clock, Download, QrCode, Users } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { QRCode } from '../ui/QRCode';
 import { formatDate, formatTime } from '../helper/date';
+import { Link } from 'react-router-dom';
+import { TicketCard } from '../ui/TicketCard';
 
 export const DefaultTIcket: TicketData = {
   _id: "",
@@ -78,22 +80,7 @@ const MyTickets: React.FC = () => {
   };
 
 
-  const getStatusColor = (status: string) => {
-    const colors: { [key: string]: string } = {
-      active: 'bg-green-100 text-green-800',
-      used: 'bg-blue-100 text-blue-800',
-      cancelled: 'bg-red-100 text-red-800',
-      expired: 'bg-gray-100 text-gray-800'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
 
-  const downloadQRCode = (ticket: TicketData) => {
-    const link = document.createElement('a');
-    link.download = `ticket-${ticket.ticketId}.png`;
-    link.href = ticket.qrCodeImage;
-    link.click();
-  };
 
   if (loading) {
     return (
@@ -118,65 +105,7 @@ const MyTickets: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tickets.map((ticket) => (
-            <div id={ticket.ticketId} key={ticket._id} className="card">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                    {ticket.status}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {ticket.price === 0 ? 'Free' : `$${ticket.price}`}
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {ticket.event.title}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {ticket.event.organization.name}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {formatDate(ticket.event.date)}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="w-4 h-4 mr-2" />
-                    {formatTime(ticket.event.startTime)}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    {ticket.event.location}
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="text-center">
-                    <QRCode 
-                      ticketID={ticket.ticketId}
-                    />
-                    {/* <img
-                      src={ticket.qrCodeImage}
-                      alt="QR Code"
-                      className="w-24 h-24 mx-auto mb-2"
-                    /> */}
-                    <p className="text-xs text-gray-500 mb-3">
-                      Ticket ID: {ticket.ticketId}
-                    </p>
-                    <button
-                      onClick={() => downloadQRCode(ticket)}
-                      className="btn-outline text-sm"
-                    >
-                      <Download className="w-4 h-4 mr-1" />
-                      Download QR
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TicketCard ticket={ticket} />
           ))}
         </div>
       )}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Calendar, Search, Filter, Box, HelpingHand, Briefcase, Globe, Users, School, Medal } from 'lucide-react';
 import { DateRangePicker } from 'rsuite';
 import 'rsuite/dist/rsuite.min.css';
@@ -21,27 +21,44 @@ const EventsFilters: React.FC<EventsFiltersProps> = ({ filters, setFilters }) =>
     { value: 'volunteer', label: 'Volunteer', icon: <HelpingHand /> },
     { value: 'other', label: 'Other', icon: <Box /> },
   ];
+  const [searchInput, setSearchInput] = useState(filters.search);
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
+  useEffect(() => {
+    setSearchInput(filters.search);
+  }, [filters.search]);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col items-center">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
         {/* Search */}
-        <div className="relative">
+        <div className="relative flex items-center">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
           </div>
+
           <input
             type="text"
             placeholder="Search events..."
-            className="input-field pl-10"
-            value={filters.search}
-            onChange={e => handleFilterChange('search', e.target.value)}
+            className="input-field pl-10 pr-20"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e : any) => {
+              if (e.key === 'Enter') handleFilterChange('search', searchInput);
+            }}
           />
+
+          <button
+            type="button"
+            onClick={() => handleFilterChange('search', searchInput)}
+            className="absolute right-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+          >
+            Search
+          </button>
         </div>
+
 
         {/* Date Range */}
         <div className="relative">

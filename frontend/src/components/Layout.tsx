@@ -101,6 +101,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <Link
                       key={item.name}
                       to={item.href}
+                      style={{textDecoration: "none"}}
                       className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                         isActive(item.href)
                           ? 'border-primary-500 text-gray-900'

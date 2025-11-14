@@ -87,11 +87,13 @@ export const EventCard = ({event} : {event: Event}) => {
         
         <Link
             to={`/events/${event._id}`}
-            className="w-full btn-primary flex items-center justify-center"
+            className="w-full btn-primary flex items-center justify-center text-white hover:text-white no-underline hover:no-underline"
         >
             View Details
             <ArrowRight className="w-4 h-4 ml-2" />
         </Link>
+
+
         <SaveToCalendarButton event={event} />
         </div>
     </div>

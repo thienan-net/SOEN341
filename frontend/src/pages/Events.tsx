@@ -25,16 +25,17 @@ export interface Event {
   remainingCapacity: number;
   capacity: number;
 }
+interface Filters {
+    search: string;
+    category: string;
+    dateRange?: [Date, Date];
+}
 
 const Events: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [filters, setFilters] = useState<{
-    search: string;
-    category: string;
-    dateRange?: [Date, Date];
-  }>({
+  const [filters, setFilters] = useState<Filters>({
     search: '',
     category: '',
     dateRange: undefined // no default date filter
@@ -47,17 +48,19 @@ const Events: React.FC = () => {
     hasNext: false,
     hasPrev: false
   });
-const prevFiltersRef = useRef(filters);
+  const prevFiltersRef = useRef<Filters | null>(null);
 
-useEffect(() => {
-  // Compare previous filters with current filters
-  const filtersChanged = JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters);
+  useEffect(() => {
+    if (!prevFiltersRef.current) {
+      fetchEvents(); // first load
+    } else {
+      const filtersChanged =
+        JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters);
+      if (filtersChanged) fetchEvents();
+    }
+    prevFiltersRef.current = filters;
+  }, [filters]);
 
-  if (filtersChanged) {
-    fetchEvents();
-    prevFiltersRef.current = filters; // update previous filters
-  }
-}, [filters]);
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -86,11 +89,6 @@ useEffect(() => {
     }
   };
 
-  const onFilterSubmit = (key: string, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-  };
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -100,7 +98,7 @@ useEffect(() => {
       </div>
 
       {/* Filters */}
-      <EventsFilters filters={filters} setFilters={setFilters} />
+      <EventsFilters  filters={filters} setFilters={setFilters} />
 
       {/* Loading Spinner */}
       {loading ? (
