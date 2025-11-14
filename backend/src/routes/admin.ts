@@ -31,7 +31,12 @@ router.get('/dashboard', authenticate, authorize('admin'), async (req: AuthReque
       User.countDocuments(),
       Event.countDocuments(),
       Ticket.countDocuments(),
-      User.countDocuments({ isApproved: false }),
+      User.countDocuments({
+        $or: [
+          { role: { $in: ['student', 'admin'] }, isApproved: false },
+          { role: 'organizer', organizerStatus: 'pending' }
+        ]
+      }),
       Event.find({ status: 'published' })
         .populate('organization', 'name logo')
         .populate('createdBy', 'firstName lastName')
@@ -119,7 +124,18 @@ router.get('/users', authenticate, authorize('admin'), [
 
     const filter: any = {};
     if (role) filter.role = role;
-    if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
+    
+    if (isApproved !== undefined) {
+      const approvalStatus = isApproved === 'true';
+      
+      if (role === 'organizer') {
+        // For organizers, filter by organizerStatus
+        filter.organizerStatus = approvalStatus ? 'approved' : { $in: ['pending', 'rejected'] };
+      } else {
+        // For students and admins, filter by isApproved
+        filter.isApproved = approvalStatus;
+      }
+    }
 
     const users = await User.find(filter)
       .select('-password')
@@ -159,19 +175,33 @@ router.put('/users/:id/approve', authenticate, authorize('admin'), [
     }
 
     const { isApproved } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { isApproved },
-      { new: true }
-    ).select('-password').populate('organization', 'name');
-
+    const user = await User.findById(req.params.id);
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Handle approval differently based on user role
+    const updateData: any = {};
+    
+    if (user.role === 'organizer') {
+      // For organizers, update both organizerStatus and isApproved
+      updateData.organizerStatus = isApproved ? 'approved' : 'rejected';
+      updateData.isApproved = isApproved;
+    } else {
+      // For students and admins, update isApproved
+      updateData.isApproved = isApproved;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    ).select('-password').populate('organization', 'name');
+
     res.json({
       message: `User ${isApproved ? 'approved' : 'rejected'} successfully`,
-      user
+      user: updatedUser
     });
   } catch (error) {
     console.error('Approve user error:', error);
@@ -392,9 +422,18 @@ router.put('/events/:id/approve', authenticate, authorize('admin'), [
     }
 
     const { isApproved, reason } = req.body;
+    
+    // Prepare update data
+    const updateData: any = { isApproved };
+    
+    // If approving the event, also set status to published
+    if (isApproved) {
+      updateData.status = 'published';
+    }
+    
     const event = await Event.findByIdAndUpdate(
       req.params.id,
-      { isApproved },
+      updateData,
       { new: true }
     ).populate('organization', 'name').populate('createdBy', 'firstName lastName email');
 
