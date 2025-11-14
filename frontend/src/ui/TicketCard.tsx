@@ -30,11 +30,11 @@ export const TicketCard = ({ ticket }: Props) => {
         link.click();
     };
 
-    // ⭐⭐⭐ IMPORTANT : retour ticket
+
     const returnTicket = async () => {
         try {
             await axios.post(`/tickets/${ticket.ticketId}/return`);
-            window.location.reload(); // recharge la page après l'annulation
+            window.location.reload();
         } catch (err) {
             console.error("Return ticket error:", err);
             alert("Could not return the ticket.");

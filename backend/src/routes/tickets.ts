@@ -8,9 +8,6 @@ import { v4 as uuidv4 } from "uuid";
 
 const router = express.Router();
 
-/* ================================
-   4.2 – STUDENT CLAIMS A TICKET
-================================ */
 router.post(
     "/claim",
     authenticate,
@@ -27,46 +24,41 @@ router.post(
         const event = await Event.findById(eventId);
 
         if (!event) return res.status(404).json({ message: "Event not found" });
-
-        if (event.status !== "published" || !event.isApproved) {
+        if (event.status !== "published" || !event.isApproved)
           return res.status(400).json({ message: "Event is not available for claiming" });
-        }
 
-        if (event.date < new Date()) {
+        if (event.date < new Date())
           return res.status(400).json({ message: "Event already passed" });
-        }
 
         const existingTicket = await Ticket.findOne({
           event: eventId,
           user: req.user!._id,
-          status: { $in: ["active", "used"] },
+          status: { $in: ["active", "used"] }
         });
 
-        if (existingTicket) {
+        if (existingTicket)
           return res.status(400).json({ message: "You already have a ticket for this event" });
-        }
 
         const activeTickets = await Ticket.countDocuments({
           event: eventId,
-          status: "active",
+          status: "active"
         });
 
-        if (activeTickets >= event.capacity) {
+        if (activeTickets >= event.capacity)
           return res.status(400).json({ message: "Event is sold out" });
-        }
 
         const ticketId = uuidv4();
 
         const qrPayload = JSON.stringify({
           ticketId,
           eventId,
-          userId: (req.user!._id as any).toString(),
-          timestamp: new Date().toISOString(),
+          userId: String(req.user!._id),
+          timestamp: new Date().toISOString()
         });
 
         const qrCodeImage = await QRCode.toDataURL(qrPayload, {
           width: 256,
-          margin: 2,
+          margin: 2
         });
 
         const ticket = await Ticket.create({
@@ -74,22 +66,19 @@ router.post(
           event: eventId,
           user: req.user!._id,
           qrCode: qrPayload,
-          price: event.ticketType === "paid" ? event.ticketPrice : 0,
+          price: event.ticketType === "paid" ? event.ticketPrice : 0
         });
 
         await ticket.populate([
-          {
-            path: "event",
-            select: "title date location startTime endTime organization",
-          },
-          { path: "user", select: "firstName lastName email" },
+          { path: "event", select: "title date location startTime endTime organization" },
+          { path: "user", select: "firstName lastName email" }
         ]);
 
         res.status(201).json({
           ticket: {
             ...ticket.toObject(),
-            qrCodeImage,
-          },
+            qrCodeImage
+          }
         });
       } catch (e) {
         console.error("Claim ticket error:", e);
@@ -98,9 +87,6 @@ router.post(
     }
 );
 
-/* ================================
-   GET MY TICKETS (STUDENT)
-================================ */
 router.get(
     "/my",
     authenticate,
@@ -111,14 +97,14 @@ router.get(
             .populate({
               path: "event",
               select: "title date startTime endTime location organization imageUrl",
-              populate: { path: "organization", select: "name logo" },
+              populate: { path: "organization", select: "name logo" }
             })
             .sort({ createdAt: -1 });
 
         const result = await Promise.all(
             tickets.map(async (t) => ({
               ...t.toObject(),
-              qrCodeImage: await QRCode.toDataURL(t.qrCode, { width: 128 }),
+              qrCodeImage: await QRCode.toDataURL(t.qrCode, { width: 128 })
             }))
         );
 
@@ -130,9 +116,6 @@ router.get(
     }
 );
 
-/* ================================
-   VALIDATE TICKET (ORGANIZER)
-================================ */
 router.post(
     "/validate",
     authenticate,
@@ -142,9 +125,8 @@ router.post(
     async (req: AuthRequest, res: express.Response) => {
       try {
         const errors = validationResult(req);
-        if (!errors.isEmpty()) {
+        if (!errors.isEmpty())
           return res.status(400).json({ errors: errors.array() });
-        }
 
         const { qrData } = req.body;
 
@@ -159,37 +141,31 @@ router.post(
             .populate({
               path: "event",
               select: "title date organization",
-              populate: { path: "organization", select: "name" },
+              populate: { path: "organization", select: "name" }
             })
             .populate("user", "firstName lastName email");
 
-        if (!ticket) {
-          return res.status(404).json({ message: "Ticket not found" });
-        }
+        if (!ticket) return res.status(404).json({ message: "Ticket not found" });
 
         if (
             (ticket.event as any).organization._id.toString() !==
             req.user!.organization!.toString()
-        ) {
+        )
           return res.status(403).json({ message: "Ticket does not belong to your organization" });
-        }
 
-        if (ticket.status !== "active") {
+        if (ticket.status !== "active")
           return res.status(400).json({
             message: "Ticket is not valid",
             status: ticket.status,
-            usedAt: ticket.usedAt,
+            usedAt: ticket.usedAt
           });
-        }
 
-        res.json({
+        return res.json({
           valid: true,
           ticket: {
-            id: ticket._id,
             ticketId: ticket.ticketId,
-            event: ticket.event,
-            user: ticket.user,
-          },
+            status: ticket.status
+          }
         });
       } catch (e) {
         console.error(e);
@@ -198,9 +174,6 @@ router.post(
     }
 );
 
-/* ================================
-   RETURN TICKET (STUDENT)
-================================ */
 router.post(
     "/:id/return",
     authenticate,
@@ -209,22 +182,19 @@ router.post(
       try {
         const ticket = await Ticket.findOne({ ticketId: req.params.id });
 
-        if (!ticket) {
+        if (!ticket)
           return res.status(404).json({ message: "Ticket not found" });
-        }
 
-        if (String(ticket.user) !== String(req.user!._id)) {
+        if (String(ticket.user) !== String(req.user!._id))
           return res.status(403).json({ message: "Access denied" });
-        }
 
-        if (ticket.status !== "active") {
+        if (ticket.status !== "active")
           return res.status(400).json({ message: "Ticket is not active" });
-        }
 
         ticket.status = "cancelled";
         await ticket.save();
 
-        res.json({ message: "Ticket returned successfully" });
+        return res.json({ message: "Ticket returned successfully" });
       } catch (error) {
         console.error("Return ticket error:", error);
         res.status(500).json({ message: "Server error" });
