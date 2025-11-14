@@ -80,20 +80,25 @@ router.get('/', [
 
     // --- Date range filter ---
     if (dateStart || dateEnd) {
+      // Parse input date strings as local dates
       const startDate = dateStart ? new Date(dateStart as string) : new Date();
-      startDate.setHours(0, 0, 0, 0); 
+      startDate.setHours(0, 0, 0, 0); // start of day local
+      const startUTC = new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000);
 
-      let endDate: Date | undefined;
+      let endUTC: Date | undefined;
       if (dateEnd) {
-        endDate = new Date(dateEnd as string);
-        endDate.setHours(23, 59, 59, 999); 
+        const endDate = new Date(dateEnd as string);
+        endDate.setHours(23, 59, 59, 999); // end of day local
+        endUTC = new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000);
       }
 
-      filter.date = endDate ? { $gte: startDate, $lte: endDate } : { $gte: startDate };
+      filter.date = endUTC ? { $gte: startUTC, $lte: endUTC } : { $gte: startUTC };
     } else {
+      // Default: today onwards
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      filter.date = { $gte: today };
+      const todayUTC = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+      filter.date = { $gte: todayUTC };
     }
 
     // --- Category filter ---
