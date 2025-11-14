@@ -309,18 +309,25 @@ const EventAnalytics: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Top Performing Events</h2>
           <div className="space-y-4">
             {analytics.topEvents.map((event) => (
-              <div key={event._id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <h3 className="font-medium text-gray-900">{event.title}</h3>
-                  <p className="text-sm text-gray-500">{event.category} • {new Date(event.date).toLocaleDateString()}</p>
+                <div
+                  key={event._id}
+                  className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-200 rounded-lg bg-white hover:shadow-lg transition"
+                >
+                  <div className="flex-1 mb-2 md:mb-0">
+                    <h3 className="font-semibold text-gray-900 text-lg">{event.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      {event.category} • {new Date(event.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end md:items-center space-y-1">
+                    <p className="font-semibold text-gray-900">
+                      {event.registrations}/{event.capacity}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {((event.registrations / event.capacity) * 100).toFixed(1)}% full
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900">{event.registrations}/{event.capacity}</p>
-                  <p className="text-sm text-gray-500">
-                    {((event.registrations / event.capacity) * 100).toFixed(1)}% full
-                  </p>
-                </div>
-              </div>
             ))}
           </div>
         </div>
@@ -329,21 +336,34 @@ const EventAnalytics: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Upcoming Events</h2>
           <div className="space-y-4">
             {analytics.upcomingEvents.map((event) => (
-              <div key={event._id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <h3 className="font-medium text-gray-900">{event.title}</h3>
-                  <p className="text-sm text-gray-500">{event.category} • {new Date(event.date).toLocaleDateString()}</p>
+                <div
+                  key={event._id}
+                  className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-200 rounded-lg bg-white hover:shadow-lg transition"
+                >
+                  {/* Left side: Title & category */}
+                  <div className="flex-1 mb-2 md:mb-0">
+                    <h3 className="font-semibold text-gray-900 text-lg">{event.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      {event.category} • {new Date(event.date).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  {/* Right side: Status badge */}
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        event.status === 'published'
+                          ? 'bg-green-100 text-green-800'
+                          : event.status === 'draft'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {event.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    event.status === 'published' ? 'bg-green-100 text-green-800' :
-                    event.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {event.status}
-                  </span>
-                </div>
-              </div>
+
             ))}
           </div>
         </div>
