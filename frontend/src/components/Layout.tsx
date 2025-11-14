@@ -84,36 +84,38 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 left-0 w-full z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="text-2xl font-bold text-primary-600">
+                <Link to="/" className="text-2xl font-bold text-primary-600 " style={{textDecoration: 'none'}}>
                   CampusEvents
                 </Link>
               </div>
               {/* Desktop navigation: hidden below lg */}
-              <div className="hidden lg:ml-6 lg:flex lg:space-x-8">
-                {navigationItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      style={{textDecoration: "none"}}
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive(item.href)
-                          ? 'border-primary-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 mr-2" />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </div>
+                <div className="hidden lg:ml-6 lg:flex lg:space-x-8">
+                  {navigationItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href); // check if link is active
+
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        style={{ textDecoration: "none" }}
+                        className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium
+                          ${active 
+                            ? 'border-primary-500 text-primary-500'  // text color matches theme
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                          }`}
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
             </div>
 
             {/* User dropdown: hidden below lg */}
