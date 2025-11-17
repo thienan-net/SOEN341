@@ -24,6 +24,9 @@ export interface Event {
   ticketsIssued: number;
   remainingCapacity: number;
   capacity: number;
+  isApproved: boolean;
+  userHasTicket: boolean;
+  isClaimable: boolean;
 }
 interface Filters {
     search: string;
@@ -49,7 +52,6 @@ const Events: React.FC = () => {
     hasPrev: false
   });
   const prevFiltersRef = useRef<Filters | null>(null);
-
   useEffect(() => {
     if (!prevFiltersRef.current) {
       fetchEvents(); // first load
@@ -79,7 +81,7 @@ const Events: React.FC = () => {
 
       const response = await axios.get(`/events?${params.toString()}`);
       const { events, pagination: newPagination } = response.data;
-
+      console.log("events", events)
       setEvents(events);
       setPagination(newPagination);
     } catch (error) {

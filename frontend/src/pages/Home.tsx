@@ -24,6 +24,9 @@ interface Event {
   ticketsIssued: number;
   remainingCapacity: number;
   capacity: number;
+  isApproved: boolean;
+  userHasTicket: boolean;
+  isClaimable: boolean;
 }
 
 const Home: React.FC = () => {
@@ -35,7 +38,7 @@ const Home: React.FC = () => {
   });
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-
+console.log(featuredEvents)
   useEffect(() => {
     const fetchData = async () => {
       try {

@@ -58,14 +58,14 @@ router.get("/organizer", [
 // @route   GET /api/events
 // @desc    Get all published and approved events with filtering
 // @access  Public
-router.get('/', [
+router.get('/', authenticate, [
   query('category').optional().isIn(['academic', 'social', 'sports', 'cultural', 'career', 'volunteer', 'other']),
   query('dateStart').optional().isISO8601(),
   query('dateEnd').optional().isISO8601(),
   query('search').optional().isString(),
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 })
-], async (req: express.Request, res: express.Response) => {
+], async (req: AuthRequest, res: express.Response) => { // <-- use AuthRequest here
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -75,36 +75,31 @@ router.get('/', [
     const { category, dateStart, dateEnd, search, page = 1, limit = 10 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    // Build filter object
     const filter: any = {};
 
-    // --- Date range filter ---
+    // --- Date filter ---
     if (dateStart || dateEnd) {
-      // Parse input date strings as local dates
       const startDate = dateStart ? new Date(dateStart as string) : new Date();
-      startDate.setHours(0, 0, 0, 0); // start of day local
+      startDate.setHours(0, 0, 0, 0);
       const startUTC = new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000);
 
       let endUTC: Date | undefined;
       if (dateEnd) {
         const endDate = new Date(dateEnd as string);
-        endDate.setHours(23, 59, 59, 999); // end of day local
+        endDate.setHours(23, 59, 59, 999);
         endUTC = new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000);
       }
 
       filter.date = endUTC ? { $gte: startUTC, $lte: endUTC } : { $gte: startUTC };
     } else {
-      // Default: today onwards
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayUTC = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
       filter.date = { $gte: todayUTC };
     }
 
-    // --- Category filter ---
     if (category) filter.category = category;
 
-    // --- Search filter ---
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -122,18 +117,35 @@ router.get('/', [
 
     const total = await Event.countDocuments(filter);
 
-    // Get ticket counts for each event
+    // --- Add isClaimable ---
     const eventsWithTickets = await Promise.all(
       events.map(async (event) => {
         const ticketCount = await Ticket.countDocuments({ event: event._id, status: 'active' });
+
+        let hasUserTicket = false;
+        if (req.user) {
+          const ticketExists = await Ticket.exists({ event: event._id, user: req.user._id, status: {$in: ['active', 'used']} });
+          hasUserTicket = !!ticketExists;
+        }
+
+        const remainingCapacity = event.capacity - ticketCount;
+        const isClaimable = Boolean(
+          !hasUserTicket &&
+          remainingCapacity > 0 &&
+          event.status === "published" &&
+          event.isApproved &&
+          new Date(event.date) >= new Date()
+        );
         return {
           ...event.toObject(),
           ticketsIssued: ticketCount,
-          remainingCapacity: event.capacity - ticketCount
+          remainingCapacity,
+          isClaimable: req.user ? isClaimable : true,
+          userHasTicket: hasUserTicket
         };
       })
     );
-
+    console.log("user", req.user)
     res.json({
       events: eventsWithTickets,
       pagination: {
@@ -144,11 +156,13 @@ router.get('/', [
         hasPrev: Number(page) > 1
       }
     });
+
   } catch (error) {
     console.error('Get events error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // @route   GET /api/events/attendees/:id
 // @desc    Get full attendee list (name, email, ticket info) for an event
@@ -200,7 +214,7 @@ router.get(
 // @route   GET /api/events/:id
 // @desc    Get single event by ID
 // @access  Public
-router.get('/:id', async (req: express.Request, res: express.Response) => {
+router.get('/:id', authenticate, async (req: AuthRequest, res: express.Response) => {
   try {
     const event = await Event.findById(req.params.id)
       .populate('organization', 'name logo website contactEmail')
@@ -210,18 +224,42 @@ router.get('/:id', async (req: express.Request, res: express.Response) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
+    // Count active tickets
     const ticketCount = await Ticket.countDocuments({ event: event._id, status: 'active' });
+    const remainingCapacity = event.capacity - ticketCount;
 
+    // Check if the current user has a ticket (active or used)
+    let hasUserTicket = false;
+    if (req.user) {
+      const ticketExists = await Ticket.exists({
+        event: event._id,
+        user: req.user._id,
+        status: { $in: ['active', 'used'] }
+      });
+      hasUserTicket = !!ticketExists;
+    }
+
+    // Determine if the event is claimable
+    const isClaimable = Boolean(
+      !hasUserTicket &&
+      remainingCapacity > 0 &&
+      event.status === "published" &&
+      event.isApproved &&
+      new Date(event.date) >= new Date()
+    );
     res.json({
       ...event.toObject(),
       ticketsIssued: ticketCount,
-      remainingCapacity: event.capacity - ticketCount
+      remainingCapacity,
+      userHasTicket: hasUserTicket,
+      isClaimable: req.user ? isClaimable : true // if not logged in, always true
     });
   } catch (error) {
     console.error('Get event error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // @route   POST /api/events
 // @desc    Create a new event
