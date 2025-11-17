@@ -2,7 +2,7 @@ import express from 'express';
 import { body, validationResult, query } from 'express-validator';
 import Event from '../models/Event';
 import Ticket from '../models/Ticket';
-import { authenticate, AuthRequest, authorize, requireApproval } from '../middleware/auth';
+import { authenticate, AuthRequest, authorize, requireApproval, optionalAuthenticate } from '../middleware/auth';
 import SavedEvent from '../models/SavedEvent';
 
 
@@ -58,7 +58,7 @@ router.get("/organizer", [
 // @route   GET /api/events
 // @desc    Get all published and approved events with filtering
 // @access  Public
-router.get('/', authenticate, [
+router.get('/', optionalAuthenticate, [
   query('category').optional().isIn(['academic', 'social', 'sports', 'cultural', 'career', 'volunteer', 'other']),
   query('dateStart').optional().isISO8601(),
   query('dateEnd').optional().isISO8601(),
@@ -214,7 +214,7 @@ router.get(
 // @route   GET /api/events/:id
 // @desc    Get single event by ID
 // @access  Public
-router.get('/:id', authenticate, async (req: AuthRequest, res: express.Response) => {
+router.get('/:id', optionalAuthenticate, async (req: AuthRequest, res: express.Response) => {
   try {
     const event = await Event.findById(req.params.id)
       .populate('organization', 'name logo website contactEmail')
