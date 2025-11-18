@@ -49,7 +49,6 @@ const OrganizerDashboard: React.FC = () => {
       setLoading(false);
     }
   };
-  console.log(recentEvents)
 
   if (loading) {
     return (

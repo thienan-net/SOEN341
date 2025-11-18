@@ -27,7 +27,6 @@ export interface Event {
 const OrganizerEvents: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
-    console.log(events)
     const [pagination, setPagination] = useState({
         currentPage: 1,
         totalPages: 1,

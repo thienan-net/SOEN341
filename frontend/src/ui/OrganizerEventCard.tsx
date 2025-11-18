@@ -62,7 +62,6 @@ export const OrganizerEventCard = (props : Props) => {
 
             URL.revokeObjectURL(url);
             toast.success("Attendee list exported successfully");
-            console.log(res.data)
         }
         catch(error : any) {
             toast.error(error.response.data || error.mesage)
