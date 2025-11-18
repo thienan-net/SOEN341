@@ -5,6 +5,16 @@ import User, { IUser } from '../models/User';
 export interface AuthRequest extends Request {
   user?: IUser;
 }
+export const optionalAuthenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    let user 
+    if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+        user = await User.findById(decoded.userId).select('-password');
+    }
+    req.user = user || undefined;
+    next();
+};
 
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {

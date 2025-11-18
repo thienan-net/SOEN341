@@ -22,6 +22,9 @@ interface SavedEvent {
   ticketsIssued: number;
   remainingCapacity: number;
   capacity: number;
+  isApproved: boolean;
+  userHasTicket: boolean;
+  isClaimable: boolean;
 }
 
 const MySavedEvents: React.FC = () => {
