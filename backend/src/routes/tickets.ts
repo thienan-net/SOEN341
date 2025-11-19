@@ -16,8 +16,9 @@ router.post(
   authenticate,
   authorize("student"),
   [body("eventId").isMongoId()],
-  async (req: AuthRequest, res) => {
-    try {
+    async (req: AuthRequest, res: express.Response) => {
+
+      try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
@@ -87,7 +88,7 @@ router.get(
   "/my",
   authenticate,
   authorize("student"),
-  async (req: AuthRequest, res) => {
+    async (req: AuthRequest, res: express.Response) => {
     try {
       const tickets = await Ticket.find({ user: req.user!._id })
         .populate({
@@ -121,7 +122,7 @@ router.post(
   authorize("organizer"),
   requireApproval,
   [body("qrData").isString()],
-  async (req: AuthRequest, res) => {
+    async (req: AuthRequest, res: express.Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
@@ -180,7 +181,7 @@ router.post(
     body("reason").isString().notEmpty(),
     body("comment").optional().isString()
   ],
-  async (req: AuthRequest, res) => {
+    async (req: AuthRequest, res: express.Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
