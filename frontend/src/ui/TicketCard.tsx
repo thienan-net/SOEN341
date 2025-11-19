@@ -27,6 +27,14 @@ export const TicketCard = ({ ticket }: Props) => {
         return colors[status] || "bg-gray-100 text-gray-800";
     };
 
+    const getCardColor = (status: string) => {
+        const colors: { [key: string]: string } = {
+            active: "bg-green-50",
+            cancelled: "bg-red-50"
+        };
+        return colors[status] || "bg-white";
+    };
+
     const downloadQRCode = () => {
         const link = document.createElement("a");
         link.download = `ticket-${ticket.ticketId}.png`;
@@ -41,8 +49,7 @@ export const TicketCard = ({ ticket }: Props) => {
                 comment
             });
             window.location.reload();
-        } catch (err) {
-            console.error("Return ticket error:", err);
+        } catch {
             alert("Could not return the ticket.");
         }
     };
@@ -95,7 +102,11 @@ export const TicketCard = ({ ticket }: Props) => {
                 </div>
             )}
 
-            <div id={ticket.ticketId} key={ticket._id} className="card">
+            <div
+                id={ticket.ticketId}
+                key={ticket._id}
+                className={`card ${getCardColor(ticket.status)}`}
+            >
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <span
