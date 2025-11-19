@@ -1,23 +1,32 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
-import * as express from 'express';
 
 export interface AuthRequest extends Request {
   user?: IUser;
 }
+export const optionalAuthenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    let user 
+    if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+        user = await User.findById(decoded.userId).select('-password');
+    }
+    req.user = user || undefined;
+    next();
+};
 
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
     const user = await User.findById(decoded.userId).select('-password');
-    
+
     if (!user) {
       return res.status(401).json({ message: 'Token is not valid' });
     }
@@ -25,7 +34,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Token is not valid' });
+    console.error('authenticate error:', error);
+    return res.status(401).json({ message: 'Token is not valid' });
   }
 };
 
@@ -44,18 +54,26 @@ export const authorize = (...roles: string[]) => {
 };
 
 export const requireApproval = async (
-  req: AuthRequest,
-  res: express.Response,
-  next: express.NextFunction
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
 ) => {
   try {
-    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
-    if (req.user.role !== 'organizer') return res.status(403).json({ message: 'Organizer role required' });
-    if (req.user.organizerStatus !== 'approved') {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (req.user.role === 'student' || req.user.role === 'admin') {
+      return next();
+    }
+
+    if (req.user.role === 'organizer' && req.user.organizerStatus !== 'approved') {
       return res.status(403).json({ message: 'Organizer account not approved' });
     }
-    next();
-  } catch {
+
+    return next();
+  } catch (error) {
+    console.error('requireApproval error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };

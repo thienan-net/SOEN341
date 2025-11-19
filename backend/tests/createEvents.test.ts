@@ -36,6 +36,7 @@ describe("Feature 2.1 - Event Creation", () => {
       lastName: "Doe",
       role: "organizer",
       isApproved: true,
+      organizerStatus: "approved",
       organization: orgId,
     });
     await Organization.create({
@@ -80,6 +81,7 @@ describe("Feature 2.1 - Event Creation", () => {
       lastName: "Doe",
       role: "organizer",
       isApproved: true,
+      organizerStatus: "approved",
       organization: orgId,
     });
     await Organization.create({

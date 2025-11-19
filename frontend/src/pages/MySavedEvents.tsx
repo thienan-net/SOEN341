@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Calendar, MapPin, Clock, Users, ArrowRight } from 'lucide-react';
 import axios from 'axios';
+import { EventCard } from '../ui/EventCard';
 
 interface SavedEvent {
   _id: string;
@@ -21,6 +22,9 @@ interface SavedEvent {
   ticketsIssued: number;
   remainingCapacity: number;
   capacity: number;
+  isApproved: boolean;
+  userHasTicket: boolean;
+  isClaimable: boolean;
 }
 
 const MySavedEvents: React.FC = () => {
@@ -71,7 +75,6 @@ const MySavedEvents: React.FC = () => {
     <div className="space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">My Saved Events</h1>
-        <p className="text-gray-600">Events you've saved to your calendar</p>
       </div>
 
       {events.length === 0 ? (
@@ -83,75 +86,7 @@ const MySavedEvents: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {events.map((event) => (
-            <div key={event._id} className="card hover:shadow-lg transition-shadow">
-              {event.imageUrl && (
-                <img
-                  src={event.imageUrl}
-                  alt={event.title}
-                  className="w-full h-48 object-cover rounded-lg mb-4"
-                />
-              )}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                    {event.category}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {event.ticketType === 'free' ? 'Free' : `$${event.ticketPrice}`}
-                  </span>
-                </div>
-                
-                <h3 className="text-xl font-semibold text-gray-900 line-clamp-2">
-                  {event.title}
-                </h3>
-                
-                <p className="text-gray-600 line-clamp-3">
-                  {event.description}
-                </p>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {formatDate(event.date)}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="w-4 h-4 mr-2" />
-                    {formatTime(event.startTime)} - {formatTime(event.endTime)}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    {event.location}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Users className="w-4 h-4 mr-2" />
-                    {event.organization.name}
-                  </div>
-                </div>
-                
-                <div className="pt-4">
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                    <span>{event.ticketsIssued} tickets issued</span>
-                    <span>{event.remainingCapacity} remaining</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-primary-600 h-2 rounded-full"
-                      style={{
-                        width: `${(event.ticketsIssued / event.capacity) * 100}%`
-                      }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <a
-                  href={`/events/${event._id}`}
-                  className="w-full btn-primary flex items-center justify-center"
-                >
-                  View Details
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </a>
-              </div>
-            </div>
+            <EventCard event={event}/>
           ))}
         </div>
       )}

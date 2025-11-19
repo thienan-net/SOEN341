@@ -26,6 +26,8 @@ import AdminEvents from './pages/AdminEvents';
 import AdminOrganizations from './pages/AdminOrganizations';
 import QRValidator from './pages/QRValidator';
 import NotAuthorized from './pages/NotAuthorized';
+import OrganizerEvents from './pages/OrganizerEvents';
+import EditEventPage from './pages/EditEvent';
 
 
 function App() {
@@ -81,6 +83,22 @@ function App() {
                 } 
               />
               <Route 
+                path="/organizer/events" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <OrganizerEvents />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/organizer/events/edit/:id" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <EditEventPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/organizer/events/create" 
                 element={
                   <ProtectedRoute allowedRoles={['organizer']}>
@@ -88,16 +106,23 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-
-              <Route 
+              {/* this seems to provide global analytics, disabling for now */}
+              {/* <Route 
                 path="/organizer/events/:id/analytics" 
                 element={
                   <ProtectedRoute allowedRoles={['organizer']}>
                     <EventAnalytics />
                   </ProtectedRoute>
                 } 
+              /> */}
+              <Route 
+                path="/organizer/events/analytics" 
+                element={
+                  <ProtectedRoute allowedRoles={['organizer']}>
+                    <EventAnalytics />
+                  </ProtectedRoute>
+                } 
               />
-
               <Route 
                 path="/admin/dashboard" 
                 element={
