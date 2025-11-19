@@ -7,15 +7,29 @@ import { formatDate, formatTime } from "../helper/date";
 import { QRCode } from "./QRCode";
 import SaveToCalendarButton from "./SaveToCalendarButton";
 import { Event } from "../pages/Events";
+import { StyledSelect } from "./StyledSelect";
+import { toast } from "react-toastify";
 
 interface Props {
     ticket: TicketData;
+    tickets: TicketData[];
+    setTickets: React.Dispatch<React.SetStateAction<TicketData[]>>;
 }
 
-export const TicketCard = ({ ticket }: Props) => {
-    const [showModal, setShowModal] = useState(false);
-    const [reason, setReason] = useState("");
-    const [comment, setComment] = useState("");
+export const returnReasons = [
+    { value: "unable_to_attend", label: "Unable to attend" },
+    { value: "no_longer_interested", label: "No longer interested" },
+    { value: "wrong_event", label: "Wrong event" },
+    { value: "duplicate_ticket", label: "Duplicate ticket" },
+    { value: "schedule_conflict", label: "Schedule conflict" },
+    { value: "personal_reasons", label: "Personal reasons" },
+    { value: "other", label: "Other" }
+];
+
+export const TicketCard = ({ ticket, tickets, setTickets }: Props) => {
+    const [showReturnModal, setShowReturnModal] = useState(false);
+    const [returnReason, setReturnReason] = useState("");
+    const [returnComment, setReturnComment] = useState("");
 
     const getStatusColor = (status: string) => {
         const colors: { [key: string]: string } = {
@@ -45,108 +59,83 @@ export const TicketCard = ({ ticket }: Props) => {
     const submitReturn = async () => {
         try {
             await axios.post(`/tickets/${ticket.ticketId}/return`, {
-                reason,
-                comment
+                reason: returnReason,
+                comment: returnComment
             });
-            window.location.reload();
-        } catch {
-            alert("Could not return the ticket.");
+
+            const updated = [...tickets];
+            const modified = updated.find((x) => x.ticketId === ticket.ticketId);
+            if (modified) {
+                modified.status = "cancelled";
+                modified.returnReason = returnReason;
+                modified.returnComment = returnComment;
+            }
+            setTickets(updated);
+
+            setShowReturnModal(false);
+            setReturnReason("");
+            setReturnComment("");
+            toast.success("Ticket returned successfully.");
+        } catch (err) {
+            console.error("Return ticket error:", err);
+            toast.error("Could not return the ticket.");
         }
     };
 
     return (
-        <>
-            {showModal && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-                        <h2 className="text-lg font-semibold mb-4">
-                            Return Ticket
-                        </h2>
+        <div
+            id={ticket.ticketId}
+            key={ticket._id}
+            className={`card rounded-lg shadow p-4 ${getCardColor(ticket.status)}`}
+        >
+            <div className="space-y-4">
 
-                        <label className="block text-sm font-medium mb-1">
-                            Reason *
-                        </label>
-                        <input
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            className="w-full border rounded p-2 mb-3"
-                            placeholder="Why are you returning this ticket?"
-                        />
+                {/* Status + Price */}
+                <div className="flex items-center justify-between">
+                    <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                            ticket.status
+                        )}`}
+                    >
+                        {ticket.status === "cancelled" ? "returned" : ticket.status}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                        {ticket.price === 0 ? "Free" : `$${ticket.price}`}
+                    </span>
+                </div>
 
-                        <label className="block text-sm font-medium mb-1">
-                            Additional comments
-                        </label>
-                        <textarea
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            className="w-full border rounded p-2 h-20 mb-4"
-                            placeholder="Optional"
-                        />
+                {/* Title + Organization */}
+                <div>
+                    <Link to={`/events/${ticket.event._id}`}>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            {ticket.event.title}
+                        </h3>
+                    </Link>
+                    <p className="text-sm text-gray-600">
+                        {ticket.event.organization.name}
+                    </p>
+                </div>
 
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="px-4 py-2 bg-gray-200 rounded"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={submitReturn}
-                                disabled={!reason.trim()}
-                                className="px-4 py-2 bg-red-600 text-white rounded disabled:bg-red-300"
-                            >
-                                Submit
-                            </button>
-                        </div>
+                {/* Event Info */}
+                <div className="space-y-2">
+                    <div className="flex items-center text-sm text-gray-500">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        {formatDate(ticket.event.date)}
+                    </div>
+
+                    <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="w-4 h-4 mr-2" />
+                        {formatTime(ticket.event.startTime)}
+                    </div>
+
+                    <div className="flex items-center text-sm text-gray-500">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        {ticket.event.location}
                     </div>
                 </div>
-            )}
 
-            <div
-                id={ticket.ticketId}
-                key={ticket._id}
-                className={`card ${getCardColor(ticket.status)}`}
-            >
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}
-                        >
-                            {ticket.status}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                            {ticket.price === 0 ? "Free" : `$${ticket.price}`}
-                        </span>
-                    </div>
-
-                    <div>
-                        <Link to={`/events/${ticket.event._id}`}>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                {ticket.event.title}
-                            </h3>
-                        </Link>
-                        <p className="text-sm text-gray-600">
-                            {ticket.event.organization.name}
-                        </p>
-                    </div>
-
-                    <div className="space-y-2">
-                        <div className="flex items-center text-sm text-gray-500">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {formatDate(ticket.event.date)}
-                        </div>
-
-                        <div className="flex items-center text-sm text-gray-500">
-                            <Clock className="w-4 h-4 mr-2" />
-                            {formatTime(ticket.event.startTime)}
-                        </div>
-
-                        <div className="flex items-center text-sm text-gray-500">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {ticket.event.location}
-                        </div>
-                    </div>
-
+                {/* QR + Buttons (Active only) */}
+                {ticket.status === "active" && (
                     <div className="pt-4 border-t border-gray-200">
                         <div className="text-center flex flex-col items-center">
                             <QRCode ticketID={ticket.ticketId} />
@@ -164,22 +153,89 @@ export const TicketCard = ({ ticket }: Props) => {
                                     Download QR
                                 </button>
 
-                                {ticket.status === "active" && (
-                                    <button
-                                        onClick={() => setShowModal(true)}
-                                        className="btn-outline text-sm flex items-center"
-                                    >
-                                        <Ticket className="w-4 h-4 mr-1" />
-                                        Return Ticket
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => setShowReturnModal(true)}
+                                    className="btn-outline text-sm flex items-center"
+                                >
+                                    <Ticket className="w-4 h-4 mr-1" />
+                                    Return Ticket
+                                </button>
 
                                 <SaveToCalendarButton event={ticket.event as Event} />
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
+
+                {/* Returned ticket details */}
+                {ticket.status === "cancelled" && (
+                    <div className="pt-4 border-t border-gray-200">
+                        <p className="text-sm text-gray-700">
+                            <strong>Return reason:</strong>{" "}
+                            {returnReasons.find((x) => x.value === ticket.returnReason)?.label ||
+                                ticket.returnReason}
+                        </p>
+
+                        {ticket.returnComment && (
+                            <p className="text-sm text-gray-700">
+                                <strong>Comments:</strong> {ticket.returnComment}
+                            </p>
+                        )}
+                    </div>
+                )}
             </div>
-        </>
+
+            {/* Return Modal */}
+            {showReturnModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 flex flex-col justify-between">
+                        <div>
+                            <h2 className="text-lg font-semibold mb-4">Return Ticket</h2>
+
+                            <label className="block mb-2 text-sm font-medium text-gray-700">
+                                Reason
+                            </label>
+                            <StyledSelect
+                                options={returnReasons}
+                                value={returnReason}
+                                onChange={setReturnReason}
+                            />
+
+                            <label className="block mt-4 mb-2 text-sm font-medium text-gray-700">
+                                Additional Comments
+                            </label>
+                            <textarea
+                                className="w-full border border-gray-300 rounded-md p-2 resize-none"
+                                rows={3}
+                                value={returnComment}
+                                onChange={(e) => setReturnComment(e.target.value)}
+                                placeholder="Optional comments..."
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-2 mt-4">
+                            <button
+                                onClick={() => setShowReturnModal(false)}
+                                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                            >
+                                Close
+                            </button>
+
+                            <button
+                                onClick={submitReturn}
+                                disabled={!returnReason}
+                                className={`px-4 py-2 rounded text-white ${
+                                    returnReason
+                                        ? "bg-red-600 hover:bg-red-700"
+                                        : "bg-red-300 cursor-not-allowed"
+                                }`}
+                            >
+                                Confirm Return
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };

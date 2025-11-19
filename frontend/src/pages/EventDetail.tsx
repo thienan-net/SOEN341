@@ -32,6 +32,10 @@ interface Event {
   tags: string[];
   requirements?: string;
   contactInfo?: string;
+  isClaimable: boolean;
+  userHasTicket: boolean;
+  isApproved: boolean;
+  status: 'draft' |'published' | 'cancelled' | 'completed'
 }
 
 const EventDetail: React.FC = () => {
@@ -53,6 +57,7 @@ const EventDetail: React.FC = () => {
     try {
       const response = await axios.get(`/events/${id}`);
       setEvent(response.data);
+      console.log("res", response.data)
     } catch (error) {
       console.error('Error fetching event:', error);
       toast.error('Event not found');
@@ -335,26 +340,34 @@ const EventDetail: React.FC = () => {
           {/* Action Buttons */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             {user?.role === 'student' && (
-              <button
-                onClick={handleClaimTicket}
-                disabled={claimingTicket || isEventPassed || isSoldOut}
-                className={`w-full py-3 px-4 rounded-lg font-semibold flex items-center justify-center ${
-                  isEventPassed
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : isSoldOut
-                    ? 'bg-red-100 text-red-700 cursor-not-allowed'
-                    : 'bg-primary-600 hover:bg-primary-700 text-white'
-                }`}
-              >
-                <Ticket className="w-5 h-5 mr-2" />
-                {claimingTicket
-                  ? 'Claiming Ticket...'
-                  : isEventPassed
-                  ? 'Event Has Passed'
-                  : isSoldOut
-                  ? 'Sold Out'
-                  : `Claim ${event.ticketType === 'free' ? 'Free' : `$${event.ticketPrice}`} Ticket`}
-              </button>
+                <button
+                  onClick={handleClaimTicket}
+                  disabled={claimingTicket || !event.isClaimable || isEventPassed || !event.isApproved}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold flex items-center justify-center ${
+                    isEventPassed
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : !event.isApproved
+                      ? 'bg-yellow-100 text-yellow-700 cursor-not-allowed'
+                      : !event.isClaimable
+                      ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                      : 'bg-primary-600 hover:bg-primary-700 text-white'
+                  }`}
+                >
+                  <Ticket className="w-5 h-5 mr-2" />
+                  {claimingTicket
+                    ? 'Claiming Ticket...'
+                    : isEventPassed
+                    ? 'Event Has Passed'
+                    : !event.isApproved
+                    ? 'Event Not Approved'
+                    : event.status === "draft" 
+                    ? 'Ticket Unavailable'
+                    : event.userHasTicket
+                    ? 'Ticket Already Claimed'
+                    : !event.isClaimable
+                    ? 'Sold Out'
+                    : `Claim ${event.ticketType === 'free' ? 'Free' : `$${event.ticketPrice}`} Ticket`}
+                </button>
             )}
             {(!user || user.role !== 'student') && (
               <div className="text-center py-4">

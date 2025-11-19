@@ -10,12 +10,14 @@ export interface SelectOption {
 
 interface Props {
   options: SelectOption[];
-  value: string;
+  value?: string; // make optional
   onChange: (value: string) => void;
+  placeholder?: string; // default display
 }
 
-export const StyledSelect: React.FC<Props> = ({ options, value, onChange }) => {
-  const selectedOption = options.find(opt => opt.value === value) || options[0];
+export const StyledSelect: React.FC<Props> = ({ options, value, onChange, placeholder }) => {
+  const selectedOption =
+    options.find((opt) => opt.value === value) || { value: '', label: placeholder || 'Select an option' };
 
   return (
     <Listbox value={selectedOption} onChange={(opt) => onChange(opt.value)}>
@@ -27,7 +29,9 @@ export const StyledSelect: React.FC<Props> = ({ options, value, onChange }) => {
               {selectedOption.icon}
             </span>
           )}
-          <span className="truncate text-gray-800 font-medium">{selectedOption.label}</span>
+          <span className={`truncate font-medium ${selectedOption.value ? 'text-gray-800' : 'text-gray-400'}`}>
+            {selectedOption.label}
+          </span>
           <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
             <ChevronDown className="h-5 w-5 text-gray-400" />
           </span>
@@ -46,9 +50,7 @@ export const StyledSelect: React.FC<Props> = ({ options, value, onChange }) => {
               value={opt}
             >
               {opt.icon && (
-                <span className="w-4 h-4 text-gray-500 flex items-center justify-center">
-                  {opt.icon}
-                </span>
+                <span className="w-4 h-4 text-gray-500 flex items-center justify-center">{opt.icon}</span>
               )}
               <span className="truncate">{opt.label}</span>
             </ListboxOption>
