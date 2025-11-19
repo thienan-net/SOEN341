@@ -23,6 +23,9 @@ export interface Event {
     remainingCapacity: number;
     capacity: number;
     isApproved: boolean;
+    status: 'draft' | 'published' | 'cancelled' | 'completed';
+    userHasTicket: boolean;
+    isClaimable: boolean;
 }
 const OrganizerEvents: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
