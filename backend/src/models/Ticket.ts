@@ -9,19 +9,21 @@ export interface ITicket extends Document {
   usedAt?: Date;
   usedBy?: mongoose.Types.ObjectId;
   price?: number;
+
+  returnReason?: string;
+  returnComment?: string;
+  returnedAt?: Date;
+
   createdAt: Date;
   updatedAt: Date;
-  returnReason: string;
-  returnComment: string;
 }
 
-// @ts-ignore
 const TicketSchema = new Schema<ITicket>(
   {
     ticketId: {
       type: String,
       required: true,
-      unique: true // ✅ unique already creates an index — no need for .index()
+      unique: true
     },
     event: {
       type: Schema.Types.ObjectId,
@@ -36,7 +38,7 @@ const TicketSchema = new Schema<ITicket>(
     qrCode: {
       type: String,
       required: true,
-      unique: true // ✅ same here
+      unique: true
     },
     status: {
       type: String,
@@ -54,13 +56,18 @@ const TicketSchema = new Schema<ITicket>(
       type: Number,
       min: 0
     },
-    returnComment: {
-      type: String,
-      default: ''
-    },
+
     returnReason: {
       type: String,
-      default: ''
+      default: null
+    },
+    returnComment: {
+      type: String,
+      default: null
+    },
+    returnedAt: {
+      type: Date,
+      default: null
     }
   },
   {
@@ -68,8 +75,8 @@ const TicketSchema = new Schema<ITicket>(
   }
 );
 
-// ✅ Keep only necessary additional indexes
-TicketSchema.index({ event: 1, user: 1 }); // compound index still valid
-TicketSchema.index({ status: 1 });         // useful for filtering
+// Indexes
+TicketSchema.index({ event: 1, user: 1 });
+TicketSchema.index({ status: 1 });
 
 export default mongoose.model<ITicket>('Ticket', TicketSchema);
