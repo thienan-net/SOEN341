@@ -211,11 +211,12 @@ const AdminDashboard: React.FC = () => {
         </div>
         <Link
           to="/admin/events?status=pending"
-          className="btn-primary flex items-center"
+          className="btn-primary flex items-center text-white hover:text-white"
         >
           <TrendingUp className="w-4 h-4 mr-2" />
-          View Pending Events 
+          View Pending Events
         </Link>
+
       </div>
 
       {/* Stats Grid */}

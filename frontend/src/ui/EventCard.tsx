@@ -22,11 +22,11 @@ export const EventCard = ({event} : {event: Event}) => {
     return (
         <div key={event._id} className="card hover:shadow-lg transition-shadow" style={{position: "relative"}}>
             {event.userHasTicket ? (
-                <span className="absolute top-[-5px] right-[-15px] bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                <span className="absolute top-[-5px] right-[-15px] bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded-full z-3">
                     Ticket Claimed
                 </span>
             ) : !event.isClaimable && 
-            <   span className="absolute top-[-5px] right-[-15px] bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+            <   span className="absolute top-[-5px] right-[-15px] bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-full z-3">
                     Tickets unavailable
                 </span>
             }
