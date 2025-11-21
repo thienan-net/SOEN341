@@ -162,7 +162,8 @@ router.get('/events', authenticate, authorize('organizer', 'admin'), requireAppr
     const now = new Date();
     const upcomingEvents = events
       .filter(event => new Date(event.date) > now)
-      .map((event: any) => ({ // Cast to any for safety
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // ascending by date
+      .map((event: any) => ({
         _id: event._id,
         title: event.title,
         category: event.category,
@@ -173,6 +174,7 @@ router.get('/events', authenticate, authorize('organizer', 'admin'), requireAppr
         ticketType: event.ticketType
       }))
       .slice(0, 5);
+
 
     res.json({
       totalEvents,

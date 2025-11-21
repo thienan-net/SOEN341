@@ -14,6 +14,7 @@ import {
   LineElement,
 } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Link } from 'react-router-dom';
 
 // Register Chart.js components
 ChartJS.register(
@@ -294,7 +295,6 @@ const EventAnalytics: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* Registration Trends */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Registration Trends</h2>
@@ -302,7 +302,17 @@ const EventAnalytics: React.FC = () => {
           <Line data={registrationTrendData} options={chartOptions} />
         </div>
       </div>
+    <div className="flex items-center justify-between mb-6">
+      <h1 className="text-3xl font-bold text-gray-900">Events</h1>
 
+    <Link
+      to="/organizer/events"
+      className="px-4 py-2 bg-blue-600 text-white rounded-lg transition
+                hover:bg-blue-700 hover:text-white"
+    >
+      View All Events
+    </Link>
+    </div>
       {/* Top Events and Upcoming Events */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-lg shadow-md p-6">
