@@ -19,7 +19,7 @@ export const EventCard = ({event} : {event: Event}) => {
         return colors[category] || 'bg-gray-100 text-gray-800';
     };
     return (
-        <div key={event._id} className="card hover:shadow-lg transition-shadow" style={{position: "relative"}}>
+        <div key={event._id} className="card hover:shadow-lg transition-shadow" style={{position: "relative", display: 'flex', flexDirection: "column", justifyContent: "space-between"}}>
             {event.userHasTicket ? (
                 <span className="absolute top-[-5px] right-[-15px] bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded-full z-3">
                     Ticket Claimed
@@ -29,19 +29,19 @@ export const EventCard = ({event} : {event: Event}) => {
                     Tickets unavailable
                 </span>
             }
-            {event.imageUrl ? (
-                <img
-                    src={event.imageUrl}
-                    alt={event.title}
-                    className="w-full h-48 object-cover rounded-lg mb-4"
-                />
-                )
-                :
-                <div className="w-full h-48 rounded-lg mb-4 bg-gray-100 border border-gray-200 flex flex-col items-center justify-center text-gray-400">
-                    <ImageIcon className="w-8 h-8 mb-2" />
-                    <span className="text-sm">No image available</span>
-                </div>
-            }
+{event.imageUrl ? (
+    <img
+        src={event.imageUrl}
+        alt={event.title}
+        className="w-full h-40 object-cover rounded-lg mb-4"
+    />
+) : (
+    <div className="w-full h-40 rounded-lg mb-4 bg-gray-100 border border-gray-200 flex flex-col items-center justify-center text-gray-400">
+        <ImageIcon className="w-8 h-8 mb-2" />
+        <span className="text-sm">No image available</span>
+    </div>
+)}
+
             <div className="space-y-3">
             <div className="flex items-center justify-between">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(event.category)}`}>
@@ -93,18 +93,22 @@ export const EventCard = ({event} : {event: Event}) => {
                 ></div>
                 </div>
             </div>
-            
-            <Link
-                to={`/events/${event._id}`}
-                className="w-full btn-primary flex items-center justify-center text-white hover:text-white no-underline hover:no-underline"
-            >
-                View Details
-                <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
 
-
-            <SaveToCalendarButton event={event} />
             </div>
+            <div style={{display: "flex", flexDirection: "column", gap: 5, marginTop: 5}}>
+                <Link
+                    to={`/events/${event._id}`}
+                    className="w-full btn-primary flex items-center justify-center text-white hover:text-white no-underline hover:no-underline"
+                >
+                    View Details
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+
+
+                <SaveToCalendarButton event={event} />
+            </div>
+                        
+
         </div>
     )
 }
