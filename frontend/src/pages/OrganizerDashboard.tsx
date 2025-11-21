@@ -3,6 +3,8 @@ import { Calendar, Users, Ticket, TrendingUp, Plus, BarChart3 } from 'lucide-rea
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import CancelledTicketsPieChart from '../ui/CancelledTicketsPieChart';
+import { TicketData } from './MyTickets';
+import { returnReasons } from '../ui/TicketCard';
 
 interface DashboardStats {
   totalEvents: number;
@@ -66,7 +68,7 @@ const OrganizerDashboard: React.FC = () => {
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
   const [cancelledTicketsAnalytics, setCancelledTicketAnalytics] = useState<{reason: string, count: number}[]>([])
   const [loading, setLoading] = useState(true);
-  
+  const [returnedTickets, setReturnedTickets] = useState<TicketData[]>([])
   const eventStatsBoxes = [
     { title: "Total Events", value: stats.totalEvents, bg: "bg-primary-100", color: "text-primary-600", icon: Calendar },
     { title: "Published Events", value: stats.publishedEvents, bg: "bg-green-100", color: "text-green-600", icon: BarChart3 },
@@ -86,6 +88,7 @@ const OrganizerDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       const response = await axios.get('/users/organizer/dashboard');
+      setReturnedTickets(response.data.returnedTickets)
       setStats(response.data.stats);
       setTicketCounts(response.data.ticketCounts);
       setRecentEvents(response.data.recentEvents);
@@ -190,7 +193,45 @@ const OrganizerDashboard: React.FC = () => {
       </div>
       <StatsGrid title='Ticket Stats' items={titcketStatsBoxes} />
       <CancelledTicketsPieChart data={cancelledTicketsAnalytics}/>
-     
+     <div className="space-y-4 mt-6">
+        <h2 className="text-xl font-semibold">Returned Tickets</h2>
+
+        {returnedTickets.length === 0 ? (
+          <p className="text-gray-500 text-sm">No returned tickets.</p>
+        ) : (
+          returnedTickets.map((ticket) => (
+            <div
+              key={ticket._id}
+              className="p-4 border border-gray-200 rounded-lg hover:shadow-lg transition flex flex-col md:flex-row md:items-center justify-between"
+            >
+              {/* Left: Event info */}
+              <div className="flex-1 mb-2 md:mb-0">
+                <h3 className="font-semibold text-gray-900 text-lg">
+                  {ticket.event.title}
+                </h3>
+
+                <p className="text-sm text-gray-500">
+                  Reason: {returnReasons.find(x=> x.value == ticket.returnReason)?.label || "N/A"}
+                </p>
+
+                {ticket.returnComment && (
+                  <p className="text-sm text-gray-500">
+                    Comment: {ticket.returnComment}
+                  </p>
+                )}
+              </div>
+
+              {/* Right: Status badge */}
+              <div className="flex items-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                  Returned
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
     </div>
 
   );

@@ -212,7 +212,14 @@ router.get(
           };
         })
       );
-
+      const returnedTickets = await Ticket.find({
+        event: { $in: eventIds },
+        status: 'cancelled',
+        returnReason: { $exists: true, $ne: null }
+      })
+      .populate('event', 'title')
+      .populate('user', 'name email')
+      .lean();
       res.json({
         stats: {
           totalEvents,
@@ -224,6 +231,7 @@ router.get(
           active: activeTickets,
           cancelled: cancelledTickets
         },
+        returnedTickets,
         cancelledTicketsAnalytics: cancelledAnalytics, 
         eventStatusBreakdown: eventStats,
         recentEvents: recentEventsWithTickets,
