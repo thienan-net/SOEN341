@@ -151,7 +151,8 @@ router.get(
         Event.find({ createdBy: req.user!._id })
           .populate('organization', 'name')
           .sort({ createdAt: -1 })
-          .limit(5),
+          .limit(5)
+          .lean(),
         Event.find({
           createdBy: req.user!._id,
           status: 'published',
@@ -197,6 +198,21 @@ router.get(
         { $limit: 12 }
       ]);
 
+      // Add ticket counts to recent events
+      const recentEventsWithTickets = await Promise.all(
+        recentEvents.map(async (event: any) => {
+          const ticketCount = await Ticket.countDocuments({ 
+            event: event._id, 
+            status: { $in: ['active', 'used'] }
+          });
+          return {
+            ...event,
+            ticketsIssued: ticketCount,
+            remainingCapacity: event.capacity - ticketCount
+          };
+        })
+      );
+
       res.json({
         stats: {
           totalEvents,
@@ -210,7 +226,7 @@ router.get(
         },
         cancelledTicketsAnalytics: cancelledAnalytics, 
         eventStatusBreakdown: eventStats,
-        recentEvents,
+        recentEvents: recentEventsWithTickets,
         upcomingEvents,
         monthlyTickets
       });
