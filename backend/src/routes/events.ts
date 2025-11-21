@@ -31,7 +31,7 @@ router.get("/organizer", [
           // Get ticket counts for each event
       const eventsWithTickets = await Promise.all(
         events.map(async (event) => {
-          const ticketCount = await Ticket.countDocuments({ event: event._id, status: 'active' });
+          const ticketCount = await Ticket.countDocuments({ event: event._id, status: { $in: ['active', 'used'] } });
           return {
             ...event.toObject(),
             ticketsIssued: ticketCount,
@@ -120,7 +120,7 @@ router.get('/', optionalAuthenticate, [
     // --- Add isClaimable ---
     const eventsWithTickets = await Promise.all(
       events.map(async (event) => {
-        const ticketCount = await Ticket.countDocuments({ event: event._id, status: 'active' });
+        const ticketCount = await Ticket.countDocuments({ event: event._id, status: { $in: ['active', 'used'] } });
 
         let hasUserTicket = false;
         if (req.user) {
@@ -225,7 +225,7 @@ router.get('/:id', optionalAuthenticate, async (req: AuthRequest, res: express.R
     }
 
     // Count active tickets
-    const ticketCount = await Ticket.countDocuments({ event: event._id, status: 'active' });
+    const ticketCount = await Ticket.countDocuments({ event: event._id, status: { $in: ['active', 'used'] } });
     const remainingCapacity = event.capacity - ticketCount;
 
     // Check if the current user has a ticket (active or used)
@@ -435,19 +435,38 @@ router.get('/saved/my', authenticate, authorize('student'), async (req: AuthRequ
         const eventDoc = saved.event as any; // cast to populated Event
         if (!eventDoc) return null;
 
+        // Count active tickets
         const ticketsIssued = await Ticket.countDocuments({
           event: eventDoc._id,
-          status: 'active',
+          status: { $in: ['active', 'used'] },
         });
 
-        const remainingCapacity = eventDoc.capacity
-          ? eventDoc.capacity - ticketsIssued
-          : null;
+        // Check if the user already has a ticket (active or used)
+        const ticketExists = await Ticket.exists({
+          event: eventDoc._id,
+          user: userId,
+          status: { $in: ['active', 'used'] },
+        });
+        const userHasTicket = !!ticketExists;
+
+        // Remaining capacity
+        const remainingCapacity = eventDoc.capacity ? eventDoc.capacity - ticketsIssued : null;
+
+        // isClaimable logic
+        const isClaimable = Boolean(
+          !userHasTicket &&
+          (remainingCapacity ?? 1) > 0 && // fallback to 1 if capacity is null
+          eventDoc.status === 'published' &&
+          eventDoc.isApproved &&
+          new Date(eventDoc.date) >= new Date()
+        );
 
         return {
-          ...eventDoc.toObject(), // works because we casted it
+          ...eventDoc.toObject(),
           ticketsIssued,
           remainingCapacity,
+          userHasTicket,
+          isClaimable
         };
       })
     );
@@ -458,6 +477,5 @@ router.get('/saved/my', authenticate, authorize('student'), async (req: AuthRequ
     res.status(500).json({ message: 'Server error' });
   }
 });
-
 
 export default router;

@@ -173,6 +173,61 @@ router.post(
       }
     }
 );
+// POST /tickets/:ticketId/use
+router.post(
+  "/:ticketId/use",
+  authenticate,
+  authorize("organizer"),
+  requireApproval, // ensures organizer is approved
+  async (req: AuthRequest, res: express.Response) => {
+    try {
+      const { ticketId } = req.params;
+
+      const ticket = await Ticket.findOne({ ticketId })
+        .populate({
+          path: "event",
+          select: "title date organization",
+          populate: { path: "organization", select: "name" },
+        })
+        .populate("user", "firstName lastName email");
+
+      if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+      const organizerOrgId = req.user!.organization?.toString();
+      const ticketOrgId = (ticket.event as any).organization._id.toString();
+
+      if (organizerOrgId !== ticketOrgId) {
+        return res.status(403).json({ message: "Ticket does not belong to your organization" });
+      }
+
+      if (ticket.status !== "active") {
+        return res.status(400).json({
+          message: "Ticket cannot be used",
+          status: ticket.status,
+          usedAt: ticket.usedAt,
+        });
+      }
+
+      // Mark ticket as used
+      ticket.status = "used";
+      ticket.usedAt = new Date();
+
+      await ticket.save();
+
+      res.json({
+        message: "Ticket marked as used",
+        ticket: {
+          ticketId: ticket.ticketId,
+          status: ticket.status,
+          usedAt: ticket.usedAt,
+        },
+      });
+    } catch (error) {
+      console.error("Use ticket error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 
 router.post(
     "/:id/return",
@@ -209,6 +264,40 @@ router.post(
         res.status(500).json({ message: "Server error" });
       }
     }
+);
+
+// GET /ticket-details/:ticketId
+router.get(
+  "/ticket-details/:ticketId",
+  authenticate,
+  authorize("student", "organizer"), // adjust roles if needed
+  async (req: AuthRequest, res: express.Response) => {
+    try {
+      const { ticketId } = req.params;
+
+      const ticket = await Ticket.findOne({ ticketId })
+        .populate({
+          path: "event",
+          select: "title date startTime endTime location organization imageUrl",
+          populate: { path: "organization", select: "name logo" },
+        })
+        .populate("user", "firstName lastName email");
+
+      if (!ticket)
+        return res.status(404).json({ message: "Ticket not found" });
+
+      // Optional: generate QR code image if needed
+      const qrCodeImage = await QRCode.toDataURL(ticket.qrCode, { width: 128 });
+
+      res.json({
+        ...ticket.toObject(),
+        qrCodeImage,
+      });
+    } catch (error) {
+      console.error("Get ticket details error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
 );
 
 export default router;
