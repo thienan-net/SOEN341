@@ -18,7 +18,6 @@ export const EventCard = ({event} : {event: Event}) => {
         };
         return colors[category] || 'bg-gray-100 text-gray-800';
     };
-    
     return (
         <div key={event._id} className="card hover:shadow-lg transition-shadow" style={{position: "relative"}}>
             {event.userHasTicket ? (

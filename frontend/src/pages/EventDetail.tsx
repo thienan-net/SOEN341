@@ -142,7 +142,7 @@ const EventDetail: React.FC = () => {
           url: window.location.href
         });
       } catch (error) {
-        console.log('Error sharing:', error);
+        toast.error('Error sharing, try again.');
       }
     } else {
       navigator.clipboard.writeText(window.location.href);

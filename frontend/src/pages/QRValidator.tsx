@@ -43,7 +43,6 @@ const QRValidator: React.FC = () => {
     try {
       setValidatingTicket(true)
       const response = await axios.post(`tickets/${ticketId}/use`);
-      console.log(response.data)
       toast.success(response.data.message)
       setTicketUsed(true);
       setValidatingTicket(false)
@@ -51,7 +50,6 @@ const QRValidator: React.FC = () => {
     catch (error) {
       setValidatingTicket(false);
       toast.error("You are not permitted to validate this ticket.")
-      console.log("Error: ", error)
     }
   }
 
@@ -76,12 +74,11 @@ const QRValidator: React.FC = () => {
     const fetchUser = async () => {
       try {
         if(!ticket.user) return;
-        console.log("user ticket", ticket.user)
         const response = await axios.get("/users/" + ticket.user._id);
         setAttende(response.data)
       }
       catch(error) {
-        console.log("error getting user profile: ", error)
+        console.log("Error getting user profile: ", error)
       }
     }
     fetchUser()

@@ -72,15 +72,10 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
-  useEffect(()=> {
-    console.log("charts", charts);
-    console.log("mostpopular", mostPopular)
-  }, [charts, mostPopular])
 
   const fetchDashboardData = async () => {
     try {
       const response = await axios.get('/admin/dashboard');
-      console.log("stats", response.data.stats)
       setStats(response.data.stats);
       setCharts(response.data.charts);
       setMostPopular({
