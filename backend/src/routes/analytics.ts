@@ -1,6 +1,7 @@
 import express from 'express';
 import Event from '../models/Event';
 import User from '../models/User';
+import Ticket from '../models/Ticket';
 import { authenticate, authorize, requireApproval, AuthRequest } from '../middleware/auth'; // Add AuthRequest import
 
 const router = express.Router();
@@ -50,20 +51,37 @@ router.get('/events', authenticate, authorize('organizer', 'admin'), requireAppr
 
     // Get all events for calculations
     const events = await Event.find(baseFilter).populate('organization', 'name');
+    const eventIds = events.map(event => event._id);
 
-    // Calculate metrics
+    // Get actual ticket counts from Ticket model
+    const tickets = await Ticket.find({ 
+      event: { $in: eventIds },
+      status: { $in: ['active', 'used'] } // Only count active and used tickets, not cancelled
+    });
+
+    // Create a map of event ID to ticket count
+    const ticketCountByEvent = tickets.reduce((acc, ticket) => {
+      const eventId = ticket.event.toString();
+      acc[eventId] = (acc[eventId] || 0) + 1;
+      return acc;
+    }, {} as { [key: string]: number });
+
+    // Calculate metrics using actual ticket data
     const totalEvents = events.length;
-    const totalRegistrations = events.reduce((sum, event: any) => sum + (event.registrations || 0), 0); // Cast to any
+    const totalRegistrations = Object.values(ticketCountByEvent).reduce((sum, count) => sum + count, 0);
+    
     const totalRevenue = events.reduce((sum, event: any) => { // Cast to any
-      if (event.ticketType === 'paid' && event.ticketPrice && event.registrations) {
-        return sum + (event.ticketPrice * event.registrations);
+      const eventTicketCount = ticketCountByEvent[event._id.toString()] || 0;
+      if (event.ticketType === 'paid' && event.ticketPrice && eventTicketCount > 0) {
+        return sum + (event.ticketPrice * eventTicketCount);
       }
       return sum;
     }, 0);
     
     const averageAttendance = events.length > 0 
       ? events.reduce((sum, event: any) => { // Cast to any
-          const attendanceRate = event.capacity > 0 ? (event.registrations || 0) / event.capacity : 0;
+          const eventTicketCount = ticketCountByEvent[event._id.toString()] || 0;
+          const attendanceRate = event.capacity > 0 ? eventTicketCount / event.capacity : 0;
           return sum + attendanceRate;
         }, 0) / events.length * 100
       : 0;
@@ -81,14 +99,45 @@ router.get('/events', authenticate, authorize('organizer', 'admin'), requireAppr
       return acc;
     }, {} as { [key: string]: number });
 
-    // Registration trends (last 30 days)
+    // Registration trends (last 30 days) - use real ticket creation data
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const dailyTickets = await Ticket.aggregate([
+      {
+        $match: {
+          event: { $in: eventIds },
+          createdAt: { $gte: thirtyDaysAgo },
+          status: { $in: ['active', 'used'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+
+    // Create a complete 30-day range with actual ticket data
     const registrationTrends = [];
+    const ticketsByDate = dailyTickets.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {} as { [key: string]: number });
+
     for (let i = 29; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
       registrationTrends.push({
         date: date.toISOString(),
-        registrations: Math.floor(Math.random() * 20) // Mock data for now
+        registrations: ticketsByDate[dateStr] || 0
       });
     }
 
@@ -100,7 +149,7 @@ router.get('/events', authenticate, authorize('organizer', 'admin'), requireAppr
         title: event.title,
         category: event.category,
         capacity: event.capacity,
-        registrations: event.registrations || 0,
+        registrations: ticketCountByEvent[event._id.toString()] || 0,
         date: event.date,
         status: event.status,
         ticketType: event.ticketType,
@@ -118,7 +167,7 @@ router.get('/events', authenticate, authorize('organizer', 'admin'), requireAppr
         title: event.title,
         category: event.category,
         capacity: event.capacity,
-        registrations: event.registrations || 0,
+        registrations: ticketCountByEvent[event._id.toString()] || 0,
         date: event.date,
         status: event.status,
         ticketType: event.ticketType
